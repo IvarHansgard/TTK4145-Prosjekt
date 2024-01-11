@@ -4,7 +4,17 @@ You can only run one thread at a time so the routines will run after each other
 
 Results from code:
 We use two threads to run the increase and decrease function for the global variable i at the same time causing a race condition
+C:
+------------
+RUN | RESULT 
+1   | 153301
+2   | -112753
+3   | -58078
+4   | -287308
+5   | 152997
 
+GO:
+------------
 RUN | RESULT 
 1   | -88891
 2   | 50016
@@ -12,8 +22,16 @@ RUN | RESULT
 4   | 82282
 5   | -186276
 
-TASK 4:
 
+
+TASK 4:
+C:
+------------
+Semaphores should 
+
+
+GO:
+------------
 DONE
 
 TASK 5:
