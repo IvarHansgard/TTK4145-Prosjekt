@@ -1,11 +1,12 @@
 TASK 3:
+------------------
 What does GOMAXPROCS do? What happens if you set it to 1?
 You can only run one thread at a time so the routines will run after each other 
 
 Results from code:
 We use two threads to run the increase and decrease function for the global variable i at the same time causing a race condition
+
 C:
-------------
 RUN | RESULT 
 1   | 153301
 2   | -112753
@@ -14,7 +15,6 @@ RUN | RESULT
 5   | 152997
 
 GO:
-------------
 RUN | RESULT 
 1   | -88891
 2   | 50016
@@ -22,16 +22,11 @@ RUN | RESULT
 4   | 82282
 5   | -186276
 
-
-
 TASK 4:
+------------------
 C:
-------------
-Semaphores should 
-
+Mutex is the right choice because you want to acces a shared variable and need to deny access to it while writing to it 
+Semaphores is used when you want to signal that somthing has changed like a counter
 
 GO:
-------------
 DONE
-
-TASK 5:
