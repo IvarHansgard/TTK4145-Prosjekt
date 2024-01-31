@@ -15,11 +15,10 @@ import (
 //
 //	will be received as zero-values.
 type Elevator struct {
-	name          string
-	floor         int
-	running       bool
-	direction     int //define i C 1 UP, 0 STILLE  DOWN -1
-	commandBuffer chan int
+	name      string
+	floor     int
+	running   bool
+	direction int //define i C 1 UP, 0 STILLE  DOWN -1
 }
 
 func main() {
@@ -61,9 +60,9 @@ func main() {
 
 	// The example message. We just send one of these every second.
 	go func() {
-		E1 := Elevator{"Elevator1", 0, false, 0, make(chan int, 5)}
+		E1 := Elevator{"Elevator1", 0, false, 0}
 		for {
-			if E1.floor >= 4 {
+			if E1.floor <= 4 {
 				E1.floor++
 			} else {
 				E1.floor = 0
@@ -84,7 +83,8 @@ func main() {
 			fmt.Printf("  Lost:     %q\n", p.Lost)
 
 		case a := <-elevatorRx:
-			fmt.Printf("Received: %#v\n", a.name)
+			fmt.Printf("Received: %s is on floor %d \n", a.name, a.floor)
 		}
 	}
 }
+>
