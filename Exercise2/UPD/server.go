@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func listenUDPport(port string) string {
+func listenUDPport(port string, outsideIpAddress chan string) {
 	recieveBuffer := make([]byte, 1024)
 
 	udpAddress, err := net.ResolveUDPAddr("udp", port)
@@ -23,7 +23,7 @@ func listenUDPport(port string) string {
 		log.Fatal(err, numBytes)
 	}
 
-	return ipAddr.IP.String()
+	outsideIpAddress <- ipAddr.IP.String()
 }
 
 func sendUDP(ipAdress, port, message string) {
@@ -41,17 +41,20 @@ func sendUDP(ipAdress, port, message string) {
 	udpConnection.Close()
 }
 
+/*
 func broadcastdUDP(ipAdress, port, message string) {
-	/*usikker om det finnes*/
 }
+*/
 
-func readUDP(ipAdress, port string, buffer chan []byte, n chan int) {
+func readUDP(port string, buffer chan []byte, n chan int) {
 
 	recieveBuffer := make([]byte, 1024)
 
-	udpAddress, err := net.ResolveUDPAddr("udp", ipAdress+port)
+	udpAddress, err := net.ResolveUDPAddr("udp", port)
 
 	udpConnection, err := net.ListenUDP("udp", udpAddress)
+
+	defer udpConnection.Close()
 
 	numBytes, ipAddr, err := udpConnection.ReadFromUDP(recieveBuffer)
 
@@ -63,8 +66,22 @@ func readUDP(ipAdress, port string, buffer chan []byte, n chan int) {
 
 	buffer <- recieveBuffer
 	n <- numBytes
+}
 
-	udpConnection.Close()
+func readUDP2(ip, port string) {
+	pc, err := net.ListenPacket("udp", ip+port)
+	if err != nil {
+		panic(err)
+	}
+	defer pc.Close()
+	buf := make([]byte, 1024)
+	n, addr, err := pc.ReadFrom(buf)
+	if err != nil {
+		panic(err)
+	}
+
+	Println("you recieved: ", n, "bytes from IP: ", addr)
+	Println("message was: ", buf[:n])
 }
 
 func sendTCP(ipAdress, port, message string) {
@@ -100,42 +117,55 @@ func readTCP(ipAdress, port string) {
 	if err != nil {
 		log.Fatal(err, numBytes)
 	}
-	Println(recieveBuffer[0:numBytes])
+	Println(recieveBuffer[:numBytes])
 }
 
 func main() {
 
 	runtime.GOMAXPROCS(2)
-
 	//test listen udp to get server ip
-	//listenUDPport(":30000")
-
-	/* Test send/recieve UPD
-	buffer := make(chan []byte, 1024)
-	n := make(chan int)
-
-	for {
-		go sendUDP("192.168.1.210", ":20023", "HEI")
-		go readUDP("192.168.1.210", ":20023", buffer, n)
-		select {
-		case x := <-buffer:
-			y := <-n
-			print("Message recieved was: ")
-			for i := 0; i < y; i++ {
-				Printf("%c", x[i])
+	/*
+		ipAddr := make(chan string)
+		for {
+			go listenUDPport(":30000", ipAddr)
+			select {
+			case x := <-ipAddr:
+				Println(x)
 			}
-			print("\n")
+			time.Sleep(5 * time.Second)
 		}
-		time.Sleep(5 * time.Second)
-	}
 	*/
 
-	///* Test send/recieve TCP
+	//Test send/recieve UPD
+	/*
+		buffer := make(chan []byte, 1024)
+		n := make(chan int)
+
+		for {
+
+			go sendUDP("10.100.23.191", ":20023", "HEI")
+
+			go readUDP(":20023", buffer, n)
+
+			select {
+			case x := <-buffer:
+				y := <-n
+				print("Message recieved was: ")
+				for i := 0; i < y; i++ {
+					Printf("%c", x[i])
+				}
+				print("\n")
+			}
+
+			time.Sleep(5 * time.Second)
+		}
+	*/
+	//Test send/recieve TCP
 	for {
 		//setup channels like udp ^^
-		sendTCP("192.168.1.210", ":34933", "Connect to: 192.168.1.210")
-		readTCP("192.168.1.210", ":34933")
+		sendTCP("10.100.23.191", ":33546", "Connect to: 10.100.23.33")
+		readTCP("10.100.23.191", ":33546")
 		time.Sleep(5 * time.Second)
 	}
-	//*/
+
 }
