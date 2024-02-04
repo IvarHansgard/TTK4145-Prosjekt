@@ -15,10 +15,8 @@ import (
 //
 //	will be received as zero-values.
 type Elevator struct {
-	name      string
-	floor     int
-	running   bool
-	direction int //define i C 1 UP, 0 STILLE  DOWN -1
+	Name  string
+	Floor int
 }
 
 func main() {
@@ -46,8 +44,8 @@ func main() {
 	// We can disable/enable the transmitter after it has been started.
 	// This could be used to signal that we are somehow "unavailable".
 	peerTxEnable := make(chan bool)
-	go peers.Transmitter(15647, id, peerTxEnable)
-	go peers.Receiver(15647, peerUpdateCh)
+	go peers.Transmitter(2001, id, peerTxEnable) //2001
+	go peers.Receiver(2000, peerUpdateCh)        //2000
 
 	// We make channels for sending and receiving our custom data types
 	elevatorTx := make(chan Elevator)
@@ -55,21 +53,19 @@ func main() {
 	// ... and start the transmitter/receiver pair on some port
 	// These functions can take any number of channels! It is also possible to
 	//  start multiple transmitters/receivers on the same port.
-	go bcast.Transmitter(16569, elevatorTx)
-	go bcast.Receiver(16569, elevatorRx)
+	go bcast.Transmitter(2003, elevatorTx) //2003
+	go bcast.Receiver(2002, elevatorRx)    //2002
 
 	// The example message. We just send one of these every second.
 	go func() {
-		E1 := Elevator{"Elevator1", 0, false, 0}
+		E1 := Elevator{"Elevator-2", 0}
 		for {
-			if E1.floor <= 4 {
-				E1.floor++
-			} else {
-				E1.floor = 0
+			E1.Floor++
+			if E1.Floor >= 4 {
+				E1.Floor = 0
 			}
-
 			elevatorTx <- E1
-			time.Sleep(1 * time.Second)
+			time.Sleep(2 * time.Second)
 		}
 	}()
 
@@ -83,8 +79,7 @@ func main() {
 			fmt.Printf("  Lost:     %q\n", p.Lost)
 
 		case a := <-elevatorRx:
-			fmt.Printf("Received: %s is on floor %d \n", a.name, a.floor)
+			fmt.Printf("Elevator name: %s \nFloor: %d\n", a.Name, a.Floor)
 		}
 	}
 }
->
