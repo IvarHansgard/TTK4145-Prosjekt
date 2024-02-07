@@ -38,7 +38,10 @@ func main() {
 		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
 
-	// We make a channel for receiving updates on the id's of the peers that are
+	// We make a channel for receiving updates on the id's of the peers that aretype Elevator struct {
+	Name  string
+	Floor int
+}
 	//  alive on the network
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	// We can disable/enable the transmitter after it has been started.
