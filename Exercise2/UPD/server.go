@@ -103,14 +103,6 @@ func sendTCP(ipAdress, port, message string) {
 
 func readTCP(ipAdress, port string) {
 	recieveBuffer := make([]byte, 1024)
-
-	tcpAdress, err := net.ResolveTCPAddr("tcp", ipAdress+port)
-	tcpConnection, err := net.DialTCP("tcp", nil, tcpAdress)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	numBytes, err := tcpConnection.Read(recieveBuffer)
 	tcpConnection.CloseRead()
 
