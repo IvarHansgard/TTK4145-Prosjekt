@@ -78,5 +78,4 @@ func main() {
 		check(err)
 		time.Sleep(1 * time.Second)
 	}
-
 }
