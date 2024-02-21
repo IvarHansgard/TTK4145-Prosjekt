@@ -1,46 +1,81 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"strconv"
 	"time"
 )
 
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
 func main() {
-
 	number := 0
-	/*
-		f, err := os.Create("./backup.txt")
 
-		if err != nil {
-			panic(err)
+	if _, err := os.Stat("backup"); err == nil {
+		// path/to/whatever exists
+
+		for {
+			info, err := os.Stat("backup")
+			check(err)
+
+			t := time.Now().Second()
+
+			if t == info.ModTime().Second()+3 {
+				break
+			}
 		}
 
-		f.Close()
-	*/
-	dat, err := os.Open("./backup.txt")
+		var lastline string
 
-	if err != nil {
-		panic(err)
+		f, err := os.Open("backup")
+		check(err)
+		scanner := bufio.NewScanner(f)
+
+		for scanner.Scan() {
+			lastline = scanner.Text()
+		}
+
+		n, err := strconv.Atoi(lastline)
+		check(err)
+		number = n
+		//exec.Command("gnome-terminal", "--", "go", "run", "main.go").Run()
+	} else if errors.Is(err, os.ErrNotExist) {
+		// path/to/whatever does *not* exist
+		f, err := os.OpenFile("backup", os.O_CREATE, 0600)
+		check(err)
+
+		defer f.Close()
+
+		f.Sync()
+
+		//exec.Command("gnome-terminal", "--", "go", "run", "main.go").Run()
+
+	} else {
+		fmt.Println("ERROR!!")
 	}
 
-	//fileReader := bufio.NewReader(dat)
-	//fileWriter := bufio.NewWriter(dat)
-	//file := bufio.NewReadWriter(fileReader, fileWriter)
-	n, err := dat.Write([]byte("string"))
-	//n, err = fileWriter.WriteString("0string(number)\n")
-	fmt.Println(n)
-	/*
-		s, err := fileReader.ReadBytes('\n')
-		number, err = strconv.Atoi(string(s))
-	*/
-	if err != nil {
-		panic(err)
-	}
+	f, err := os.OpenFile("backup", os.O_WRONLY|os.O_APPEND, 0600)
+	check(err)
 
-	for i := 0; i < 6; i++ {
-		fmt.Println(number)
-		number = number + 1
+	w := bufio.NewWriter(f)
+
+	exec.Command("cmd", "/C", "start", "powershell", "go", "run", "main.go").Run()
+	//exec.Command("gnome-terminal", "--", "go", "run", "main.go").Run()
+
+	for i := number; i < number+10; i++ {
+		s := fmt.Sprint(i, "\n")
+		n, err := w.WriteString(s)
+		w.Flush()
+		fmt.Println("wrote: ", n, " bytes", " number: ", i)
+		check(err)
 		time.Sleep(1 * time.Second)
 	}
 }
