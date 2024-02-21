@@ -67,8 +67,8 @@ func main() {
 
 	w := bufio.NewWriter(f)
 
-	exec.Command("cmd", "/C", "start", "powershell", "go", "run", "main.go").Run()
-	//exec.Command("gnome-terminal", "--", "go", "run", "main.go").Run()
+	//exec.Command("cmd", "/C", "start", "powershell", "go", "run", "main.go").Run()
+	exec.Command("gnome-terminal", "--", "go", "run", "main.go").Run()
 
 	for i := number; i < number+10; i++ {
 		s := fmt.Sprint(i, "\n")
