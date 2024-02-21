@@ -13,15 +13,15 @@ const (
 
 // Dirn represents the direction of the elevator.
 type Dirn int
-
+/*
 const (
 	D_Up Dirn = iota
 	D_Down
 	D_Stop
 )
-
+*/
 // vet ikke om jeg skal slå sammen med elvator_io_types:
-/*
+
 const (
 	D_Up        = 1
 	D_Down Dirn = -1
@@ -29,7 +29,7 @@ const (
 	
 )
 
-*/
+
 
 // Button represents the different types of buttons in the elevator.
 type Button int

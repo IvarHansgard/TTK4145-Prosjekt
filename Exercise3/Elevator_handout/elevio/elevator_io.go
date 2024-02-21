@@ -15,7 +15,7 @@ var _mtx            sync.Mutex
 var _conn           net.Conn
 
 type MotorDirection int
- 
+
 const (
 	MD_Up   MotorDirection = 1
 	MD_Down                = -1
@@ -54,7 +54,7 @@ func Init(addr string, numFloors int) {
 
 
 
-func SetMotorDirection(dir MotorDirection) elevator_io_types{
+func SetMotorDirection(dir MotorDirection) {
 	write([4]byte{1, byte(dir), 0, 0})
 }
 

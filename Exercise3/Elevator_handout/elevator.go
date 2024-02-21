@@ -1,114 +1,48 @@
+package main
 
+import (
+	"Driver-go/elevio"
+	"fmt"
+)
 
-import "fmt"
-//egt enum, så kanskje bytte denne syktaksen
-type ElevatorBehaviour struct{
-    EB_Idle bool
-    EB_DoorOpen bool
-    EB_Moving bool
-} 
-//egt enum i c, så kanskje bytte denne syntaksen
-type ClearRequestVariant struct {
-    // Assume everyone waiting for the elevator gets on the elevator, even if 
-    // they will be traveling in the "wrong" direction for a while
-    CV_All,
-    
-    // Assume that only those that want to travel in the current direction 
-    // enter the elevator, and keep waiting outside otherwise
-    CV_InDirn,   
+func main() {
+
+	numFloors := 4
+
+	elevio.Init("localhost:15657", numFloors)
+	connect_network()
+	
+	var d elevio.MotorDirection = elevio.MD_Up
+	//elevio.SetMotorDirection(d)
+
+	drv_buttons := make(chan elevio.ButtonEvent)
+	drv_floors := make(chan int)
+	drv_obstr := make(chan bool)
+	drv_stop := make(chan bool)
+
+	go elevio.PollButtons(drv_buttons)
+	go elevio.PollFloorSensor(drv_floors)
+	go elevio.PollObstructionSwitch(drv_obstr)
+	go elevio.PollStopButton(drv_stop)
+
+	for {
+		state: master
+		nettverk()
+		-The unassigned request
+		-The whereabouts of the elevators (floor, direction, state/behavior (ie. moving, doorOpen, idle))
+		-The current set of existing requests (cab requests and hall requests)
+		-The availability or failure modes of the elevators (sara)
+		elevator_algo() ivar
+		send_queues()
+		goto_floor() ulrikke
+
+		state: slave
+		get_cab_calls()
+		send_hall_calls()
+		get_queue()
+		elevator_algo() ivar
+		goto_floor()
+		timeout_goto_mastermode()
+		}
+	}
 }
-type Elevator struct {
-    floor int
-    dirn Dirn   
-    requests[N_FLOORS][N_BUTTONS] int                
-    behaviour ElevatorBehaviour   
-}
-type config struct {
-    clearRequestVariant ClearRequestVariant 
-    doorOpenDuration_s double              
-}
-
-func eb_toString(eb ElevatorBehaviour) string{
-    switch eb{
-    case EB_Idle:
-        return "EB_Idle"
-    case EB_DoorOpen:
-        return "EB_DoorOpen"
-    case EB_Moving:
-        return "EB_Moving"
-    default:
-        return "EB_UNDEFINED"
-    }
-}
-
-func elevator_print(es Elevator){
-    fmt.Println("  +--------------------+\n")
-    fmt.Printf(
-        "  |floor = %-2d          |\n"
-        "  |dirn  = %-12.12s|\n"
-        "  |behav = %-12.12s|\n",
-        es.floor,
-        elevio_dirn_toString(es.dirn),
-        eb_toString(es.behaviour)
-    )
-    fmt.Println("  +--------------------+\n")
-    fmt.Println("  |  | up  | dn  | cab |\n")
-    for f:=N_FLOORS-1; f>=0; f-- {
-        fmt.Println("  | %d", f)
-        for btn:=0 ; btn<N_BUTTONS; btn++{
-            if (f==N_FLOORS-1 && btn==B_HallUp) || (f==0 && btn==B_HallDown){
-                fmt.Print("|     ")
-            } else{
-                if es.requests[f][btn] !=0 {
-                    fmt.Print("|  #  ")
-                }else {
-                    fmt.Print("|  -  ")
-                } 
-            }
-        }
-        fmt.Println("|\n")
-    }
-    fmt.Println("  +--------------------+\n")
-}
-
-// i C:
-/*void elevator_print(Elevator es){
-    printf("  +--------------------+\n");
-    printf(
-        "  |floor = %-2d          |\n"
-        "  |dirn  = %-12.12s|\n"
-        "  |behav = %-12.12s|\n",
-        es.floor,
-        elevio_dirn_toString(es.dirn),
-        eb_toString(es.behaviour)
-    );
-    printf("  +--------------------+\n");
-    printf("  |  | up  | dn  | cab |\n");
-    for(int f = N_FLOORS-1; f >= 0; f--){
-        printf("  | %d", f);
-        for(int btn = 0; btn < N_BUTTONS; btn++){
-            if((f == N_FLOORS-1 && btn == B_HallUp)  || 
-               (f == 0 && btn == B_HallDown) 
-            ){
-                printf("|     ");
-            } else {
-                printf(es.requests[f][btn] ? "|  #  " : "|  -  ");
-            }
-        }
-        printf("|\n");
-    }
-    printf("  +--------------------+\n");
-}*/
-
-func elevator_uninitialized() Elevator{
-    return Elevator{
-        floor:  -1,
-        dirn:  D_Stop,
-        behaviour:  EB_Idle,
-        config: Config{
-            clearRequestVariant:  CV_All,
-            doorOpenDuration_s:  3.0,
-        },
-    }
-}
-
