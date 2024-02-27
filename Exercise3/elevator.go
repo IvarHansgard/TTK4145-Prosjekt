@@ -1,4 +1,4 @@
-
+package main
 
 import "fmt"
 //egt enum, så kanskje bytte denne syktaksen
