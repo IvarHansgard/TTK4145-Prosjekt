@@ -1,13 +1,13 @@
-package main
+package fsm
 
 import (
+	// Replace "your-username" with your actual GitHub username
 	"fmt"
 	"time"
 )
 
 func fsm_init() {
-	elevator = elevator_uninitialized()
-	outputDeive = getOutputDevice()
+	E1 = elevator.elevator_uninitialized()
 }
 
 func setAllLights(es Elevator) {

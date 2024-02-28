@@ -1,4 +1,4 @@
-
+package elevator
 
 import "fmt"
 //egt enum, så kanskje bytte denne syktaksen
