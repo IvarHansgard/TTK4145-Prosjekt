@@ -113,7 +113,7 @@ func PollStopButton(receiver chan<- bool) {
 			receiver <- v
 		}
 		prev = v
-	}
+	}a.button
 }
 
 func PollObstructionSwitch(receiver chan<- bool) {

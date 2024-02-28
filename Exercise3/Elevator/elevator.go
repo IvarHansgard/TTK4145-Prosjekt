@@ -73,7 +73,7 @@ func elevator_print(es Elevator){
 
 // i C:
 /*void elevator_print(Elevator es){
-    printf("  +--------------------+\n");
+    printf("  +--elevio------------------+\n");
     printf(
         "  |floor = %-2d          |\n"
         "  |dirn  = %-12.12s|\n"

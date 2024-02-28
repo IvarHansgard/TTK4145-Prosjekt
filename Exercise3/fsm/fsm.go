@@ -8,7 +8,7 @@ import (
 )
 
 func fsm_init() {
-	e1 := elevator_uninitialized()
+	e1 = elevator.elevator_uninitialized()
 }
 
 func setAllLights(es Elevator) {
@@ -25,67 +25,31 @@ func fsm_onInitBetweenFloors() {
 	e1.dirn = MD_Down
 	e1.behaviour = EB_Moving
 }
-func fsm_onRequestButtonPress(btn_floor int, btn_type buttonType) {
-	fmt.Println(btn_floor, eb_toString(btn_type))
-	elevator_print(elevator)
-
-	switch elevator.behaviour {
-	case EB_DoorOpen:
-		if requests_shouldClearImmediately(elevator, btn_floor, btn_type) {
-			time.sleep(3 * time.second)
-		} else {
-			elevator.requests[btn_floor][btn_type] = true
-		}
-		break
-
-	case EB_Moving:
-		elevator.requests[btn_floor][btn_type] = true
-		break
-
-	case EB_idle:
-		elevator.requests[btn_floor][btn_type] = true
-		pair := requests_chooseDirection(elevator)
-		elevator.dirn = pair.dirn
-		elevator.behaviour = pair.behaviour
-
-		switch pair.behaviour {
-		case EB_DoorOpen:
-			doorlight(true)
-			time.sleep(3 * time.second)
-			elevator = requests_clearAtCurrentFloor(elevator)
-			break
-
-		case EB_Moving:
-			outputDevice.setMotorDirection(elevator.dirn)
-			break
-
-		case EB_idle:
-			break
-		}
-		break
+func fsm_onRequestButtonPress_master(btn_floor int, btn_type buttonType, hallRequests chan <- bool) {
+	if btn_type == elevio.BT_HallDown || btn_type == elevio.BT_HallUp {
+		hallRequests[btn_floor][btn_type] <- 1
+	}else{
+		e1.requests[btn_floor][btn_type] = 1
 	}
-
-	setAllLights(elevator)
-	elevator_print(elevator)
-
 }
-func fsm_onFloorArival(newFloor int) {
-	elevator_print(elevator)
-	elevator.floor = newFloor
+
+func fsm_onRequestButtonPress_slave(btn_floor int, btn_type buttonType) {
+}
+
+
+
+func onFloorArival(newFloor int) {
+
+	e1.floor = newFloor
 	elvio.floorIndicatorLight(elevator.floor)
 	switch elevator.behaviour {
 	case EB_Moving:
-		if requests_shouldStop(elevator) {
+		if requests_shouldStop(e1) {
 			SetMotorDirection(elevio.MD_Stop)
 			set_door_open_lamp(true)
-			elevator = requests_clearAtCurrentFloor(elevator)
+			e1 = requests_clearAtCurrentFloor(e1)
 			time.Sleep(3 * time.second)
-			setallLights(elevator)
-			elevator.behaviour = EB_DoorOpen
-		}
-		break
-	default:
-		break
+			setall= e1.elevator_uninitialized()
 	}
 }
 func fsm_onDoorTimeout() {
@@ -107,8 +71,7 @@ func fsm_onDoorTimeout() {
 			motorDirection(elevator.dirn)
 			break
 		}
-		break
-	default:
+		break= elevator.elevator_uninitialized()
 		break
 	}
 }
