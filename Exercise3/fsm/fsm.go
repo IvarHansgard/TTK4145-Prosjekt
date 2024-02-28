@@ -1,13 +1,14 @@
 package fsm
 
 import (
-	// Replace "your-username" with your actual GitHub username
 	"fmt"
 	"time"
+
+	"../driver-go/elevio"
 )
 
 func fsm_init() {
-	E1 = elevator.elevator_uninitialized()
+	e1 := elevator_uninitialized()
 }
 
 func setAllLights(es Elevator) {
@@ -21,8 +22,8 @@ func setAllLights(es Elevator) {
 
 func fsm_onInitBetweenFloors() {
 	elevio.SetMotorDirection(elevio.MD_Down)
-	elevator.dirn = MD_Down
-	elevator.behaviour = EB_Moving
+	e1.dirn = MD_Down
+	e1.behaviour = EB_Moving
 }
 func fsm_onRequestButtonPress(btn_floor int, btn_type buttonType) {
 	fmt.Println(btn_floor, eb_toString(btn_type))
