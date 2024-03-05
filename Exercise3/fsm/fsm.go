@@ -3,6 +3,8 @@ package fsm
 import (
 	"fmt"
 	"time"
+	"ElevatorLib/network/bcast"
+	"ElevatorLib/network/localip"
 	"ElevatorLib/elevator"
 	"ElevatorLib/requests"
 	"ElevatorLib/driver-go/elevio"
@@ -86,9 +88,13 @@ func fsm_onDoorTimeout() {
 
 fsm_change_to_master(){}
 fsm_recieveData(){
-	
-}
-fsm_sendData(es Elevator){
 
+}
+fsm_sendData(es Elevator, Tx chan <- bcast.transmitter){
+
+}
+
+fsm_sendAlive(es Elevator){
+	
 }
 fsm_run_algo(){}

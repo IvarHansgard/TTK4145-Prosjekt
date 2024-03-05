@@ -20,25 +20,39 @@ func sendID(id int){
 func main() {
 	go elevio.Init("localhost:15657", 4)
 	
+	elevatorTx := make(chan Elevator)
+	
+	elevator1Rx := make(chan Elevator)
+	elevator2Rx := make(chan Elevator)
+	elevator1_aliveRx := make(chan int)
+	elevator2_aliveRx := make(chan int)
+
+	go bcast.Receiver(2001, elevator1_aliveRx)    //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
+	go bcast.Receiver(2002, elevator2_aliveRx)    //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
+
+	go bcast.Receiver(3001, elevator1Rx)    //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002 
+	go bcast.Receiver(3002, elevator2Rx)    //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
+	
 	id := 0	
 
-	sendID(id)
+	go bcast.Transmitter(1000+id, aliveTx) //1000
+	go bcast.Transmitter(2000+id, elevatorTx) //2000
 
-	id1 := getID("ip")
-	id2 := getID("ip")
-	
-	go getID("ip")
-	go getID("ip")
+	id1 := -1
+	id2 := -1
 
 	for(){
 		select{
-		case a := <- id1:
-		case a := <- id2:
+		case a := <- elevator1_aliveRx:
+			id1 = a.id
+		case a := <- elevator2_aliveRx:
+			id2 = a.id
 		}
 		if id1 && id2 != -1{
 			break
 		}
 	}
+
 	master := false
 
 	if id < id1 and id < id2{
@@ -57,18 +71,7 @@ func main() {
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 
-	slave1 := make(chan Elevator)
-	slave2 := make(chan Elevator)
-	
-	//network package
-	go recieve_elevator(port1, slave1)
-	go recieve_elevator(port2, slave2)
-	
-
-	//make watchdog function
-	go recive_alive_signal(port1, slave1_alive)
-	go recive_alive_signal(port2, slave2_alive)
-	go watchdog(slave1_alive,slave2_alive, 300)
+	go watchdog(elevator1_aliveRx,elevator2_aliveRx, 300)
 
 	//queue module
 	hallRequests := make(chan int[4][2])
@@ -76,7 +79,7 @@ func main() {
 	if master == true{
 	for {
 		select {
-			case a := <- slave1:
+			case a := <- elevator1Rx:
 				for x ; x < 4; x++{
 					for y ; y < 2; y++{
 						if(a.requests[x][y] == 1){
@@ -86,7 +89,7 @@ func main() {
 				}
 				watchdog1 <- 300
 
-			case a := <- slave2:
+			case a := <- elevator2Rx:
 				for x ; x < 4; x++{
 					for y ; y < 2; y++{
 						if(a.requests[x][y] == 1){
