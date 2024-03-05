@@ -1,9 +1,14 @@
 package main
 
-import "_/home/student/Documents/gruppe23/asdas/TTK4145-Prosjekt/Exercise3/driver-go/elevio"
+import(
+	"fmt"
+	"time"
+	"ElevatorLib/elevator"
+	"ElevatorLib/requests"
+	"ElevatorLib/driver-go/elevio"
+) 
 
-
-
+//network package
 func getID("id") int {
 	return id
 }
@@ -19,9 +24,21 @@ func main() {
 
 	sendID(id)
 
-	id1 := getID("ip")e1
+	id1 := getID("ip")
 	id2 := getID("ip")
 	
+	go getID("ip")
+	go getID("ip")
+
+	for(){
+		select{
+		case a := <- id1:
+		case a := <- id2:
+		}
+		if id1 && id2 != -1{
+			break
+		}
+	}
 	master := false
 
 	if id < id1 and id < id2{
@@ -40,15 +57,20 @@ func main() {
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 
-	slave1 := make(chan Elevatoe1
+	slave1 := make(chan Elevator)
+	slave2 := make(chan Elevator)
+	
+	//network package
 	go recieve_elevator(port1, slave1)
 	go recieve_elevator(port2, slave2)
 	
-	timer := make(chan int)
-	go watchdog(timer)
 
-	queue := make(chan int[4][3])
+	//make watchdog function
+	go recive_alive_signal(port1, slave1_alive)
+	go recive_alive_signal(port2, slave2_alive)
+	go watchdog(slave1_alive,slave2_alive, 300)
 
+	//queue module
 	hallRequests := make(chan int[4][2])
 
 	if master == true{
@@ -62,7 +84,7 @@ func main() {
 						}
 					}		
 				}
-				watchdog <- 300
+				watchdog1 <- 300
 
 			case a := <- slave2:
 				for x ; x < 4; x++{
@@ -72,10 +94,10 @@ func main() {
 						}
 					}		
 				}
-				watchdog <-300
+				watchdog2 <- 300
 
 			case a := <-drv_buttons:
-				fsm_onRequestButtonPress(a.Floor, a.Button, hallRequests)
+				fsm_onRequestButtonPress_master(a.Floor, a.Button, hallRequests)
 
 			case a := <-drv_floors:
 				onFloorArrival(a)
@@ -84,7 +106,6 @@ func main() {
 				elevio.SetMotorDirection(elevio.MD_Stop)
 			}
 			fsm_run_algo()
-			fsm_check_requests()
 		}
 	}else{
 		for {
@@ -95,11 +116,15 @@ func main() {
 					fsm_onFloorArival()
 				case a := <-drv_stop:
 					elevio.SetMotorDirection(elevio.MD_Stop)
-			}
+				case a := <- watchdog:
+				if a == 0{
+					fsm_change_to_master()
+				}
+				}
 			fsm_sendData()
 			fsm_recieveData()
-			fsm_check_requests()
-			fsm_check_watchdog()
+			requests_chooseDirection()
+
 			}
 		}
 }	

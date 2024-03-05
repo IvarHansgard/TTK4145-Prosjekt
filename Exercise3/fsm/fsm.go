@@ -3,8 +3,9 @@ package fsm
 import (
 	"fmt"
 	"time"
-
-	"../driver-go/elevio"
+	"ElevatorLib/elevator"
+	"ElevatorLib/requests"
+	"ElevatorLib/driver-go/elevio"
 )
 
 func fsm_init() {
@@ -14,17 +15,18 @@ func fsm_init() {
 func setAllLights(es Elevator) {
 	for f := 0; f < N_FLOORS; f++ {
 		for btn := 0; btn < N_BUTTONS; btn++ {
-			elevio.SetButtonLamp(btn, f, es.requests[f][btn])
+			elevio.SetButtonLamp(f, btn, es.requests[f][btn])
 		}
 	}
 
 }
 
 func fsm_onInitBetweenFloors() {
-	elevio.SetMotorDirection(elevio.MD_Down)
+	elevio.SetMotorDirection(MD_Down)
 	e1.dirn = MD_Down
 	e1.behaviour = EB_Moving
 }
+
 func fsm_onRequestButtonPress_master(btn_floor int, btn_type buttonType, hallRequests chan <- bool) {
 	if btn_type == elevio.BT_HallDown || btn_type == elevio.BT_HallUp {
 		hallRequests[btn_floor][btn_type] <- 1
@@ -34,12 +36,13 @@ func fsm_onRequestButtonPress_master(btn_floor int, btn_type buttonType, hallReq
 }
 
 func fsm_onRequestButtonPress_slave(btn_floor int, btn_type buttonType) {
+	e1.requests[btn_floor][btn_type] = 1
+	fsm_send_data(e1)
 }
 
 
 
 func onFloorArival(newFloor int) {
-
 	e1.floor = newFloor
 	elvio.floorIndicatorLight(elevator.floor)
 	switch elevator.behaviour {
@@ -49,8 +52,13 @@ func onFloorArival(newFloor int) {
 			set_door_open_lamp(true)
 			e1 = requests_clearAtCurrentFloor(e1)
 			time.Sleep(3 * time.second)
-			setall= e1.elevator_uninitialized()
+			setAllLights(e1)
+			e1.behaviour = EB_DoorOpen
 	}
+	break
+default:
+	break
+}
 }
 func fsm_onDoorTimeout() {
 	switch elevator.behaviour {
@@ -75,3 +83,12 @@ func fsm_onDoorTimeout() {
 		break
 	}
 }
+
+fsm_change_to_master(){}
+fsm_recieveData(){
+	
+}
+fsm_sendData(es Elevator){
+
+}
+fsm_run_algo(){}
