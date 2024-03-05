@@ -1,114 +1,103 @@
 package main
 
-import "fmt"
-//egt enum, så kanskje bytte denne syktaksen
-type ElevatorBehaviour struct{
-    EB_Idle bool
-    EB_DoorOpen bool
-    EB_Moving bool
-}  
-//egt enum i c, så kanskje bytte denne syntaksen
-type ClearRequestVariant struct {
-    // Assume everyone waiting for the elevator gets on the elevator, even if 
-    // they will be traveling in the "wrong" direction for a while
-    CV_All,
-    
-    // Assume that only those that want to travel in the current direction 
-    // enter the elevator, and keep waiting outside otherwise
-    CV_InDirn,   
-}
-type Elevator struct {
-    floor int
-    dirn Dirn   
-    requests[N_FLOORS][N_BUTTONS] int 1               
-    behaviour ElevatorBehaviour   
-}
-type config struct {
-    clearRequestVariant ClearRequestVariant 
-    doorOpenDuration_s double              
+import (
+	"Driver-go/elevio"
+	"fmt"
+)
+
+func main() {
+
+	numFloors := 4
+
+	elevio.Init("localhost:15657", numFloors)
+	connect_network()
+	
+	var d elevio.MotorDirection = elevio.MD_Up
+	//elevio.SetMotorDirection(d)
+
+	drv_buttons := make(chan elevio.ButtonEvent)
+	drv_floors := make(chan int)
+	drv_obstr := make(chan bool)
+	drv_stop := make(chan bool)
+
+	go elevio.PollButtons(drv_buttons)
+	go elevio.PollFloorSensor(drv_floors)
+	go elevio.PollObstructionSwitch(drv_obstr)
+	go elevio.PollStopButton(drv_stop)
+
+
+	/*func readUDP(port string, buffer chan []byte, n chan int) {
+
+		recieveBuffer := make([]byte, 1024)
+	
+		udpAddress, err := net.ResolveUDPAddr("udp", port)
+	
+		udpConnection, err := net.ListenUDP("udp", udpAddress)
+	
+		defer udpConnection.Close() 
+	
+		numBytes, ipAddr, err := udpConnection.ReadFromUDP(recieveBuffer)
+	
+		if err != nil {
+			log.Fatal(err, numBytes)
+		}
+	
+		Println("you recieved: ", numBytes, "bytes from IP: ", ipAddr)
+	
+		buffer <- recieveBuffer
+		n <- numBytes
+	}*/
+	
+	func recieve_Elevator(port string) (Elevator, int, error){ //tar inn direction, floor og behaviour(door, moving, idle)
+		recieveBuffer:= make([]byte, 1024)
+
+		udpAddress, err:= net.ResolveUDPAddr("udp", port)
+		udpConnection, err:=net.ListenUDP("udp", udpAddress)
+
+		if err!=nil{
+			return Elevator{}, 0, err
+		}
+		
+		defer udpConnection.Close()
+		numBytes, _, err:= udpConnection.ReadFromUDP(recieveBuffer)
+		if err!= nil{
+			return Elevator{}, 0, err
+		}
+
+		var myData Elevator
+		buf:=bytes.NewReader(recieveBuffer[:numBytes])
+		if err:= binary.Read(buf, binary.BigEndian, &myData); err!= nil{
+			return Elevator{}, 0, err
+		}
+		return myData, numBytes, nil //returnerer hele structen Elevator 
+		//for å vite hvilken heis, kan man tildele en port til per heis og derfor aktivt lete etter info fra en heis ved å sende inn tilsvarende port 
+	}
+
+func unassigned_requests(port string) (int){//hente ut tabell med alle requests. Alle fullførte requests fjernes fra tabellen og legges til i privat kø
+	elevator:=recieve_Elevator(port)
+	for i:=
 }
 
-func eb_toString(eb ElevatorBehaviour) string{
-    switch eb{
-    case EB_Idle:
-        return "EB_Idle"
-    case EB_DoorOpen:
-        return "EB_DoorOpen"
-    case EB_Moving:
-        return "EB_Moving"
-    default:
-        return "EB_UNDEFINED"
-    }
-}
 
-func elevator_print(es Elevator){
-    fmt.Println("  +--------------------+\n")
-    fmt.Printf(
-        "  |floor = %-2d          |\n"
-        "  |dirn  = %-12.12s|\n"
-        "  |behav = %-12.12s|\n",
-        es.floor,
-        elevio_dirn_toString(es.dirn),
-        eb_toString(es.behaviour)
-    )
-    fmt.Println("  +--------------------+\n")
-    fmt.Println("  |  | up  | dn  | cab |\n")
-    for f:=N_FLOORS-1; f>=0; f-- {
-        fmt.Println("  | %d", f)
-        for btn:=0 ; btn<N_BUTTONS; btn++{
-            if (f==N_FLOORS-1 && btn==B_HallUp) || (f==0 && btn==B_HallDown){
-                fmt.Print("|     ")
-            } else{
-                if es.requests[f][btn] !=0 {
-                    fmt.Print("|  #  ")
-                }else {
-                    fmt.Print("|  -  ")
-                } 
-            }
-        }
-        fmt.Println("|\n")
-    }
-    fmt.Println("  +--------------------+\n")
-}
+	for {
+		state: master
+		nettverk()
+		-The unassigned request//the hall requests
+		-The whereabouts of the elevators (floor, direction, state/behavior (ie. moving, doorOpen, idle))
+		-The current set of existing requests (cab requests and hall requests)
+		-The availability or failure modes of the elevators (sara)
+		elevator_algo() ivar
+		send_queues()
+		goto_floor() ulrikke
 
-// i C:
-/*void elevator_print(Elevator es){
-    printf("  +--------------------+\n");
-    printf(
-        "  |floor = %-2d          |\n"
-        "  |dirn  = %-12.12s|\n"
-        "  |behav = %-12.12s|\n",
-        es.floor,
-        elevio_dirn_toString(es.dirn),
-        eb_toString(es.behaviour)
-    );
-    printf("  +--------------------+\n");
-    printf("  |  | up  | dn  | cab |\n");
-    for(int f = N_FLOORS-1; f >= 0; f--){
-        printf("  | %d", f);
-        for(int btn = 0; btn < N_BUTTONS; btn++){
-            if((f == N_FLOORS-1 && btn == B_HallUp)  || 
-               (f == 0 && btn == B_HallDown) 
-            ){
-                printf("|     ");
-            } else {
-                printf(es.requests[f][btn] ? "|  #  " : "|  -  ");
-            }
-        }
-        printf("|\n");
-    }
-    printf("  +--------------------+\n");
-}*/
-
-func elevator_uninitialized() Elevator{
-    return Elevator{
-        floor:  -1,
-        dirn:  D_Stop,
-        behaviour:  EB_Idle,
-        config: Config{
-            clearRequestVariant:  CV_All,
-            doorOpenDuration_s:  3.0,
-        },
-    }
+		state: slave
+		get_cab_calls()
+		send_hall_calls()
+		get_queue()
+		elevator_algo() ivar
+		goto_floor()
+		timeout_goto_mastermode()
+		}
+	}
 }
 
