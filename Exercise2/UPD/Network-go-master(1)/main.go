@@ -58,6 +58,7 @@ func main() {
 	//  start multiple transmitters/receivers on the same port.
 	go bcast.Transmitter(2003, elevatorTx) //2003
 	go bcast.Receiver(2002, elevatorRx)    //2002
+	go fsm_sendAlive()
 
 	// The example message. We just send one of these every second.
 	go func() {

@@ -3,6 +3,7 @@ package fsm
 import (
 	"fmt"
 	"time"
+"os"
 	"ElevatorLib/network/bcast"
 	"ElevatorLib/network/localip"
 	"ElevatorLib/elevator"
@@ -10,8 +11,13 @@ import (
 	"ElevatorLib/driver-go/elevio"
 )
 
-func fsm_init() {
+func fsm_init(elevator2, elevator3 <- chan Elevator) {
 	e1 = elevator.elevator_uninitialized()
+	e2 = elevator.elevator_uninitialized()
+	e3 = elevator.elevator_uninitialized()
+
+	e2 <- elevator2
+	e3 <- elevator3
 }
 
 func setAllLights(es Elevator) {
@@ -41,7 +47,7 @@ func fsm_onRequestButtonPress_slave(btn_floor int, btn_type buttonType) {
 	e1.requests[btn_floor][btn_type] = 1
 	fsm_send_data(e1)
 }
-
+		
 
 
 func onFloorArival(newFloor int) {
@@ -54,47 +60,71 @@ func onFloorArival(newFloor int) {
 			set_door_open_lamp(true)
 			e1 = requests_clearAtCurrentFloor(e1)
 			time.Sleep(3 * time.second)
-			setAllLights(e1)
+			elevio.setAllLights(e1)
 			e1.behaviour = EB_DoorOpen
-	}
+			time.Sleep(10*time.Second())
+			fsm_onDoorTimeout()
+		}
 	break
 default:
 	break
 }
+
 }
 func fsm_onDoorTimeout() {
-	switch elevator.behaviour {
+	switch e1.behaviour {
 	case EB_DoorOpen:
 		pair := requests_chooseDirection(elevator)
-		elevator.dirn = pair.dirn
-		elevator.behaviour = pair.behaviour
-
-		switch elevator.behaviour {
-		case EB_DoorOpen:
+		e1.dirn = pair.dirn
+		e1.behaviour = pair.behaviour
+		
+		switch e1.behaviour{	
+		case EB_DoorOpen:	
 			time.Sleep(3 * time.second)
-			elevator = requests_clearAtCurrentFloor(elevator)
-			setAllLights(elevator)
+			e1.requests = requests_clearAtCurrentFloor(elevator)
+			elevio.setAllLights(e1)
 			break
 		case EB_Moving:
 		case EB_idle:
-			doorlight(false)
-			motorDirection(elevator.dirn)
+			elevio.set_door_open_lamp(false)
+			elevio.SetMotorDirection(elevator.dirn)
 			break
 		}
-		break= elevator.elevator_uninitialized()
+	}
 		break
 	}
+
+
+func fsm_change_to_master(){}
+
+func fsm_recieveData(rx <- chan Elevator){
+	e1.requests = rx.requests
+
 }
 
-fsm_change_to_master(){}
-fsm_recieveData(){
-
+func fsm_sendData_master(elevatorNum int, elevatorTx <- chan Elevator){
+	if elevatorNum == 2{
+	elevatorTx <- e2
+}else{
+	elevatorTx <- e3
 }
-fsm_sendData(es Elevator, Tx chan <- bcast.transmitter){
-
 }
 
-fsm_sendAlive(es Elevator){
+
+func fsm_sendData_slave(elevatorTx <- chan Elevator){
+	elevatorTx <- e1
+}
+
+func fsm_run_algo(){
+	optimizedQueue := elevator_algo(e1,e2,e3)
+	for i := 0; i < 4 i++{
+		e1.requests[i][0] = optimizedQueue["one"][i][0]
+		e1.requests[i][1] = optimizedQueue["one"][i][1]		
 	
+		e2.requests[i][0] = optimizedQueue["two"][i][0]
+		e2.requests[i][1] = optimizedQueue["two"][i][1]	
+
+		e3.requests[i][0] = optimizedQueue["three"][i][0]
+		e3.requests[i][1] = optimizedQueue["three"][i][1]
+	}
 }
-fsm_run_algo(){}

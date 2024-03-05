@@ -38,7 +38,6 @@ func main() {
 				d = elevio.MD_Up
 			}
 			elevio.SetMotorDirection(d)
-            connect_network
 				elevio.SetMotorDirection(elevio.MD_Stop)
 			} else {
 				elevio.SetMotorDirection(d)
