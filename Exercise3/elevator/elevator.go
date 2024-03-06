@@ -11,17 +11,19 @@ type ElevatorBehaviour struct{
 type ClearRequestVariant struct {
     // Assume everyone waiting for the elevator gets on the elevator, even if 
     // they will be traveling in the "wrong" direction for a while
-    CV_All,
+    CV_All
     
     // Assume that only those that want to travel in the current direction 
     // enter the elevator, and keep waiting outside otherwise
-    CV_InDirn,   
+    CV_InDirn  
 }
+
 type Elevator struct {
-    floor int
-    dirn Dirn   
-    requests[N_FLOORS][N_BUTTONS] int                
-    behaviour ElevatorBehaviour   
+    Id int
+    Floor int
+    Dirn Dirn   
+    Requests [4][3]int               
+    Behaviour ElevatorBehaviour   
 }
 type config struct {
     clearRequestVariant ClearRequestVariant 
@@ -100,7 +102,7 @@ func elevator_print(es Elevator){
     printf("  +--------------------+\n");
 }*/
 
-func elevator_uninitialized() Elevator{
+func Elevator_uninitialized() Elevator{
     return Elevator{
         floor:  -1,
         dirn:  D_Stop,

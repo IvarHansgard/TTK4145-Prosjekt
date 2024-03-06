@@ -33,7 +33,7 @@ func elevatorToHRA(es <- chan Elevator) HRAElevState{
     return hra
 }
 
-func elevator_algo(hallRequests <- chan [4][2]int,elevator1, elevator2, elevator3 <- chan Elevator) out map[string][][2]bool{
+func Elevator_algo(hallRequests <- chan [4][2]int, elevator1, elevator2, elevator3 Elevator) out map[string][][2]bool{
     hra1  := elevatorToHRA(elevator1)
     hra2  := elevatorToHRA(elevator2)
     hra3  := elevatorToHRA(elevator3)

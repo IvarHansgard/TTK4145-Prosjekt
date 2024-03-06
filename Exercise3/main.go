@@ -5,13 +5,19 @@ package main
 
 import (
 	"ElevatorLib/driver-go/elevio"
+	. "ElevatorLib/elevator"
+	"ElevatorLib/fsm"
 	"ElevatorLib/network/bcast"
+	"ElevatorLib/watchdog"
 )
 
 func main() {
 	go elevio.Init("localhost:15657", 4)
 
+	master := false
+
 	activeElevators := make(chan [3]bool)
+
 	watchdogTx := make(chan int)      //elevator alive signal sent used when in slave and master mode
 	watchdogRx := make(chan int)      //elevator alive signal recieved used when in slave and master mode
 	elevatorTx := make(chan Elevator) //elevator objects sent used when in slave mode
@@ -33,8 +39,8 @@ func main() {
 	go bcast.Transmitter(2000, elevatorTx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
 
 	//run watchdog
-	go watchdog.watchdog_sendAlive(id, watchdogTx)
-	go watchdog.watchdog_checkAlive(watchdogRx, activeElevators, 10)
+	go watchdog.Watchdog_sendAlive(id, watchdogTx)
+	go watchdog.Watchdog_checkAlive(watchdogRx, activeElevators, 10)
 
 	/*
 		//master
@@ -54,35 +60,17 @@ func main() {
 		go bcast.Transmitter(2000+id, aliveTx)    //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
 		go bcast.Transmitter(3000+id, elevatorTx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
 		//
-	*/
-
-	id1 := -1
-	id2 := -1
-	timeOut := make(chan int)
-	go watchdog(elevator1_aliveRx, timeOut, 10) //timeout for elevator1
-	go watchdog(elevator2_aliveRx, timeOut, 10) //timeout for elevator2
-	go watchdog_sendAlive(id, aliveTx)
-
-	for {
-		select {
-		case a := <-elevator1_aliveRx:
-			id1 = a.id
-
-		case a := <-elevator2_aliveRx:
-			id2 = a.id
-
-		case <-timeoutSignal:
-			break
-		}
-		if id1 && id2 != -1 {
-			break
-		}
+	*/[4][2]int
+	temp := <-activeElevators
+	if temp[id-1] == true && id != 0 {
+		master = false
+	} else {
+		master = true
 	}
 
-	master := false
-
-	if id < id1 && id < id2 {
-		master = true
+	elevatorArray := make([]Elevator, 3)
+	for i := 0; i < 3; i++ {
+		elevatorArray[i] = Elevator_uninitialized()
 	}
 
 	drv_buttons := make(chan elevio.ButtonEvent)
@@ -97,58 +85,58 @@ func main() {
 
 	//queue moduletimeout
 	hallRequests := make(chan [4][2]int)
+	var temp_hallRequests [4][2]int
 
-	fsm_init(elevator1Rx, elevator2Rx)
+	fsm.Fsm_init()
 
 	if master == true {
 		for {
 			select {
-			case a := <-elevator1Rx:
-				for x; x < 4; x++ {
-					for y; y < 2; y++ {
-						if a.requests[x][y] == 1 {
-							hallRequests[x][y] = a.requests[x][y]
+			case a := <-elevatorRx:
+				for x := 0; x < 4; x++ {
+					for y := 0; y < 2; y++ {
+						if a.Requests[x][y] == 1 {
+							temp_hallRequests[x][y] = a.Requests[x][y]
 						}
 					}
 				}
-
-			case a := <-elevator2Rx:
-				for x; x < 4; x++ {
-					for y; y < 2; y++ {
-						if a.requests[x][y] == 1 {
-							hallRequests[x][y] = a.requests[x][y]
-						}
-					}
-				}
+				hallRequests <- temp_hallRequests
 
 			case a := <-drv_buttons:
-				fsm_onRequestButtonPress_master(a.Floor, a.Button, hallRequests)
+				fsm.Fsm_onRequestButtonPress_master(a.Floor, a.Button, hallRequests)
 
 			case a := <-drv_floors:
-				onFloorArrival(a)
+				fsm.OnFloorArrival(a)
 
 			case a := <-drv_stop:
-				elevio.SetMotorDirection(elevio.MD_Stop)
+				if a == true {
+					elevio.SetMotorDirection(elevio.MD_Stop)
+				} //fikk feilmelding fordi a ike blir brukt så jeg la til if a==true
 			}
-			fsm_run_algo()
-			fsm_sendData_master(2, elevator1Tx)
-			fsm_seneData_master(3, elevator2Tx)
+
+			fsm.Fsm_run_algo()
+
+			fsm.Fsm_sendData_master(2, elevatorRx)
+			fsm.Fsm_sendData_master(3, elevatorRx)
 		}
 	} else {
 		for {
 			select {
+			case a := <-activeElevators:
+				fsm.Fsm_check_master(a)
+
 			case a := <-drv_buttons:
-				fsm_onRequestButtonPress_slave(a.Floor, a.Button)
+				fsm.Fsm_onRequestButtonPress_slave(a.Floor, a.Button)
 			case a := <-drv_floors:
-				fsm_onFloorArival()
+				fsm.OnFloorArrival(a)
 			case a := <-drv_stop:
-				elevio.SetMotorDirection(elevio.MD_Stop)
-			case <-timeOut:
-				fsm_change_to_master()
+				if a == true {
+					elevio.SetMotorDirection(elevio.MD_Stop)
+				}
 			case a := <-elevatorRx:
-				fsm_recieveData(a)
+				fsm.Fsm_recieveData(a)
 			}
-			fsm_sendData_slave(elevatorTx)
+			fsm.Fsm_sendData_slave(elevatorTx)
 		}
 	}
 }

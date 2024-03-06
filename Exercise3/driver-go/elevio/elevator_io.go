@@ -102,7 +102,7 @@ func PollFloorSensor(receiver chan<- int) {
 		}
 		prev = v
 	}
-}
+} 
 
 func PollStopButton(receiver chan<- bool) {
 	prev := false
@@ -113,7 +113,8 @@ func PollStopButton(receiver chan<- bool) {
 			receiver <- v
 		}
 		prev = v
-	}a.button
+	}
+	//a.button
 }
 
 func PollObstructionSwitch(receiver chan<- bool) {
