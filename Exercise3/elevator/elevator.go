@@ -18,7 +18,6 @@ type ClearRequestVariant struct {
     CV_InDirn,   
 }
 type Elevator struct {
-    id := -1
     floor int
     dirn Dirn   
     requests[N_FLOORS][N_BUTTONS] int                

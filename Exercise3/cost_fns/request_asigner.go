@@ -1,4 +1,4 @@
-package algo
+package request_asigner
 
 import (
 	"encoding/json"

@@ -11,35 +11,50 @@ import (
 func main() {
 	go elevio.Init("localhost:15657", 4)
 
-	aliveTx := make(chan int)         //elevator alive signal sent used when in slave and master mode
+	activeElevators := make(chan [3]bool)
+	watchdogTx := make(chan int)      //elevator alive signal sent used when in slave and master mode
+	watchdogRx := make(chan int)      //elevator alive signal recieved used when in slave and master mode
 	elevatorTx := make(chan Elevator) //elevator objects sent used when in slave mode
 	elevatorRx := make(chan Elevator) //elevator objects recieved used when in slave mode
 
-	elevator1Rx := make(chan Elevator)  //elevator object 1 recieved used when in master mode
-	elevator2Rx := make(chan Elevator)  //elevator object 2 recieved used when in master mode
-	elevator1_aliveRx := make(chan int) //elevator alive signal 1 recieved used when in master mode
-	elevator2_aliveRx := make(chan int) //elevator alive signal 2 recieved used when in master mode
+	/*
+		elevator1Rx := make(chan Elevator)  //elevator object 1 recieved used when in master mode
+		elevator2Rx := make(chan Elevator)  //elevator object 2 recieved used when in master mode
+		elevator1_aliveRx := make(chan int) //elevator alive signal 1 recieved used when in master mode
+		elevator2_aliveRx := make(chan int) //elevator alive signal 2 recieved used when in master mode
+	*/
 
-	id := 0
-	masterId := 0
+	id := 0 //0, 1 or 2
 
-	//master
-	go bcast.Receiver(2000, elevator0_aliveRx) //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
-	go bcast.Receiver(2001, elevator1_aliveRx) //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
-	go bcast.Receiver(2002, elevator2_aliveRx) //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
+	go bcast.Receiver(1000, watchdogRx) //
+	go bcast.Receiver(2000, elevatorRx) //
 
-	go bcast.Receiver(3001, elevator1Rx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
-	go bcast.Receiver(3002, elevator2Rx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
+	go bcast.Transmitter(1000, watchdogTx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
+	go bcast.Transmitter(2000, elevatorTx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
 
-	go bcast.Transmitter(4000+id+1, elevator1Tx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
-	go bcast.Transmitter(4000+id+2, elevator2Tx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
-	//
+	//run watchdog
+	go watchdog.watchdog_sendAlive(id, watchdogTx)
+	go watchdog.watchdog_checkAlive(watchdogRx, activeElevators, 10)
 
-	//slave
-	go bcast.Receiver(1000+id, elevatorRx)    //elevator 0: 1000 elevator 1: 1001 elevator 2: 1002
-	go bcast.Transmitter(2000+id, aliveTx)    //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
-	go bcast.Transmitter(3000+id, elevatorTx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
-	//
+	/*
+		//master
+		go bcast.Receiver(2000, elevator0_aliveRx) //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
+		go bcast.Receiver(2001, elevator1_aliveRx) //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
+		go bcast.Receiver(2002, elevator2_aliveRx) //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
+
+		go bcast.Receiver(3001, elevator1Rx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
+		go bcast.Receiver(3002, elevator2Rx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
+
+		go bcast.Transmitter(4000+id+1, elevator1Tx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
+		go bcast.Transmitter(4000+id+2, elevator2Tx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
+		//
+
+		//slave
+		go bcast.Receiver(1000+id, elevatorRx)    //elevator 0: 1000 elevator 1: 1001 elevator 2: 1002
+		go bcast.Transmitter(2000+id, aliveTx)    //elevator 0: 2000 elevator 1: 2001 elevator 2: 2002
+		go bcast.Transmitter(3000+id, elevatorTx) //elevator 0: 3000 elevator 1: 3001 elevator 2: 3002
+		//
+	*/
 
 	id1 := -1
 	id2 := -1
