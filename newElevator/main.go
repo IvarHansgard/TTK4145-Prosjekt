@@ -1,75 +1,76 @@
 package make
 
 import (
-	elevator "ElevatorLib/Elevator"
-	"ElevatorLib/elevator"
-	"ElevatorLib/network/bcast"
-	request_asigner "ElevatorLib/requestAsigner"
-	"ElevatorLib/watchdog"
+	"elevatorlib/elevator"
+	"elevatorlib/elevator/elevatorFsm"
+	"elevatorlib/elevator/runElevator"
+	"elevatorlib/network/bcast"
+	"elevatorlib/requestAsigner"
+	"elevatorlib/watchdog"
 	"flag"
 )
 
-func checkMaster(id int, chActiveElevators chan []bool) bool {
-	if chActiveElevators[id-1] == true && id != 0 {
+func checkMaster(id int, activeElevators []bool) bool {
+	if activeElevators[id-1] == true && id != 0 {
 		return false
 	} else {
 		return true
 	}
 }
 
+type hallRequests map[string][][2]int
+
 func main() {
-	var id int = 0
-	flag.IntVar(&id, "id", "", "id of this elevator")
+	var id int
+	flag.IntVar(&id, "id", 0, "id of this elevator")
 	flag.Parse()
 
-	master := make(chan boot)
+	masterState := make(chan bool)
 	if id == 0 {
 		masterState <- true
 	}
 
-	elevatorTx = make(chan elevator.Elevator)
-	elevatorRx = make(chan elevator.Elevator)
-	activeElevators := [3]elevator.Elevator
-	chActiveElevators = make(chan []elevator.Elevator)
+	elevatorTx := make(chan elevator.Elevator)
+	elevatorRx := make(chan elevator.Elevator)
+	activeElevators := make([]elevator.Elevator, 3)
+	chActiveElevators := make(chan []elevator.Elevator)
 
-	watchdogTx = make(chan int)
-	watchdogRx = make(chan int)
-	chActiveWatchdogs = make(chan []bool)
+	chHallRequests := make(chan requestAsigner.HallRequests)
 
-	localElevator = elevator.Elevator_init(id)
-	activeElevators[id] = localElevator
-	chLocalElevator = make(chan elevator.Elevator)
-	chLocalElevator <- localElevator
+	watchdogTx := make(chan int)
+	watchdogRx := make(chan int)
+	chActiveWatchdogs := make(chan []bool)
 
 	go bcast.Transmitter(2000, elevatorTx)
 	go bcast.Receiver(2001, elevatorRx)
 
-	go bcast.Transmitter(3000, watchdogTx)
-	go bcast.Receiver(3001, watchdogRx)
+	go bcast.Transmitter(3000, chHallRequests)
+	go bcast.Receiver(3001, chHallRequests)
+
+	go bcast.Transmitter(4000, watchdogTx)
+	go bcast.Receiver(4001, watchdogRx)
 
 	go watchdog.Watchdog_checkAlive(watchdogRx, chActiveWatchdogs, 10)
 	go watchdog.Watchdog_sendAlive(id, watchdogTx)
 
-	go elvator.RunElevator(chLocalElevator)
+	go runElevator.RunLocalElevator(chHallRequests, elevatorTx, id)
 
-	go request_asigner.Request_asigner(chActiveElevators, elevatorTx) //jobbe med den her
+	go requestAsigner.RequestAsigner(chActiveElevators, masterState, chHallRequests) //jobbe med den her
 
 	for {
 		select {
 		case elevator := <-elevatorRx:
 			activeElevators[elevator.Id] = elevator
-			if masterState == true {
-				chActiveElevators <- activeElevators
-			}
+			chActiveElevators <- activeElevators
 
 		case activeWatchdogs := <-chActiveWatchdogs:
-			masterState <- checkMaster(id, activeElevators)
+			masterState <- checkMaster(id, activeWatchdogs)
 
 		case masterState := <-masterState:
 			if masterState == true {
-				changeToMaster()
+				elevatorFsm.ChangeToMaster()
 			} else {
-				changeToSlave()
+				elevatorFsm.ChangeToSlave()
 			}
 		}
 	}

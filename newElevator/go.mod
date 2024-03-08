@@ -1,3 +1,3 @@
-module ElevatorLib
+module elevatorlib
 
 go 1.21.6

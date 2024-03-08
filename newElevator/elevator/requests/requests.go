@@ -1,16 +1,19 @@
 package requests
 
-//import mere
- 
+import (
+	. "elevatorlib/elevator"
+	"elevatorlib/elevio"
+)
+
 type DirnBehaviourPair struct {
-	dirn      Dirn
+	dirn      elevio.MotorDirection
 	behaviour ElevatorBehaviour
 }
 
 func requests_above(e Elevator) int {
-	for f := e.floor + 1; f < N_FLOORS; f++ {
-		for btn := 0; btn < N_BUTTONS; btn++ {
-			if e.request[f][btn] {
+	for f := e.floor + 1; f < 4; f++ {
+		for btn := 0; btn < 3; btn++ {
+			if e.requests[f][btn] {
 				return 1
 			}
 		}
@@ -31,7 +34,7 @@ static int requests_above(Elevator e){
     return 0;
 }*/
 
-func requests_below(e Elevator) int {
+func Requests_below(e Elevator) int {
 	for f := 0; f < e.floor; f++ {
 		for btn := 0; btn < N_BUTTONS; btn++ {
 			if e.request[f][btn] {
@@ -55,7 +58,7 @@ static int requests_below(Elevator e){
     return 0;
 }*/
 
-func requests_here(e Elevator) int {
+func Requests_here(e Elevator) int {
 	for btn := 0; btn < N_BUTTONS; btn++ {
 		if e.requests[e.floor][btn] {
 			return 1
@@ -75,7 +78,7 @@ static int requests_here(Elevator e){
     return 0;
 }*/
 
-func requests_chooseDirection(e Elevator) DirnBehaviourPair {
+func Requests_chooseDirection(e Elevator) DirnBehaviourPair {
 	switch e.dirn {
 	case D_up:
 		if requests_above(e) {
@@ -138,7 +141,7 @@ DirnBehaviourPair requests_chooseDirection(Elevator e){
     }
 }*/
 
-func requests_shouldStop(e Elevator) int {
+func Requests_shouldStop(e Elevator) int {
 	switch e.dirn {
 	case D_Down:
 		return e.requests[e.floor][B_HallDown] || e.requests[e.floor][B_Cab] || !requests_below(e) //bool eller int?
@@ -171,7 +174,7 @@ int requests_shouldStop(Elevator e){
     }
 }*/
 
-func requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type Button) {
+func Requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type Button) {
 	switch e.config.clearRequestVariant {
 	case CV_All:
 		return e.floor == btn_floor
@@ -205,7 +208,7 @@ int requests_shouldClearImmediately(Elevator e, int btn_floor, Button btn_type){
     }
 }*/
 
-func requests_clearAtCurrentFloor(e Elevator) Elevator {
+func Requests_clearAtCurrentFloor(e Elevator) Elevator {
 	switch e.Config.clearRequestVariant {
 	case CV_All:
 		for btn := 0; btn < N_BUTTONS; btn++ {
