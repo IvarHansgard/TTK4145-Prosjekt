@@ -47,9 +47,11 @@ func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan []bool, ti
 			temp[2] = true
 		}
 
-		if temp != prevTemp {
-			activeWatchdogs <- temp
-			prevTemp = temp
+		for i := 0; i < 3; i++ {
+			if temp[i] != prevTemp[i] {
+				activeWatchdogs <- temp
+				prevTemp = temp
+			}
 		}
 
 		time.Sleep(1 * time.Second)

@@ -87,13 +87,13 @@ func checkIfNewRequests(elevators, oldActiveElevators []elevator.Elevator) bool 
 func checkIfNewHallRequests(oldHallRequests, newHallRequests [4][2]bool) bool {
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 2; j++ {
-			if newHallRequests["one"][i][j] != oldHallRequests["one"][i][j] {
+			if newHallRequests[i][j] != oldHallRequests[i][j] {
 				return true
 			}
-			if newHallRequests["two"][i][j] != oldHallRequests["two"][i][j] {
+			if newHallRequests[i][j] != oldHallRequests[i][j] {
 				return true
 			}
-			if newHallRequests["three"][i][j] != oldHallRequests["three"][i][j] {
+			if newHallRequests[i][j] != oldHallRequests[i][j] {
 				return true
 			}
 		}
@@ -115,7 +115,7 @@ func getHallRequests(elevators []elevator.Elevator) [4][2]bool {
 	return hallRequests
 }
 
-func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState chan bool, hallRequestsTx chan HallRequests) {
+func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState bool, hallRequestsTx chan HallRequests) {
 	var oldHallRequests [4][2]bool
 	var incommingHallRequests [4][2]bool
 
@@ -123,7 +123,7 @@ func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState chan
 		select {
 		case elevators := <-chActiveElevators: //Bare update hall request når det er en ny request
 			incommingHallRequests = getHallRequests(elevators)
-			if <-masterState {
+			if masterState {
 				if checkIfNewHallRequests(oldHallRequests, incommingHallRequests) {
 					input := elevatorsToHRAInput(elevators)
 
