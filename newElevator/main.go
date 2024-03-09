@@ -27,6 +27,8 @@ func main() {
 	masterState := make(chan bool)
 	if id == 0 {
 		masterState <- true
+	} else {
+		masterState <- false
 	}
 
 	elevatorTx := make(chan elevator.Elevator)
