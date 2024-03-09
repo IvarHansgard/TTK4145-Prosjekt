@@ -30,14 +30,14 @@ func setAllLights(e elevator.Elevator) {
 func onDoorTimeout(e elevator.Elevator) {
 	switch e.Behaviour {
 	case "EB_DoorOpen":
-		pair := requests.Requests_chooseDirection(e)
+		pair := requests.RequestsChooseDirection(e)
 		e.Dirn = pair.Dirn
 		e.Behaviour = pair.Behaviour
 
 		switch e.Behaviour {
 		case "EB_DoorOpen":
 			time.Sleep(3 * time.Second)
-			e.Requests = request.requests_clearAtCurrentFloor(e)
+			e.Requests = request.requestsClearAtCurrentFloor(e)
 			setAllLights(e)
 			break
 
@@ -57,12 +57,12 @@ func onDoorTimeout(e elevator.Elevator) {
 }
 
 func onInitBetweenFloors(e elevator.Elevator) {
-	e.Dirn = requests.Requests_chooseDirection(e)
-	e.Behaviour = requests.Requests_chooseDirection(e)
+	e.Dirn = requests.RequestsChooseDirection(e)
+	e.Behaviour = requests.RequestsChooseDirection(e)
 	elevio.SetMotorDirection(e.Dirn)
 }
 
-func RunLocalElevator(chHallRequests chan requestAsigner.HallRequests, elevatorTx chan elevator.Elevator, id int) {
+func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx chan elevator.Elevator, hallRequestsRx chan requestAsigner.HallRequests, id int) {
 	elevio.Init("localhost:15657", 4)
 
 	localElevator := elevator.Elevator_init(id)
@@ -83,7 +83,7 @@ func RunLocalElevator(chHallRequests chan requestAsigner.HallRequests, elevatorT
 
 	for {
 		select {
-		case HallRequests := <-chHallRequests:
+		case HallRequests := <-hallRequestsRx:
 			switch id {
 			case 0:
 				for i := 0; i < 4; i++ {
@@ -107,7 +107,7 @@ func RunLocalElevator(chHallRequests chan requestAsigner.HallRequests, elevatorT
 
 		case button := <-chButtonEvent:
 			localElevator.Requests[button.Floor][button.Button] = true
-			elevatorTx <- localElevator
+			elevatorTx <- localElevator //check hall request ikke oppdater nå hall
 
 		case floor := <-chFloor:
 			localElevator.Floor = floor
@@ -115,16 +115,17 @@ func RunLocalElevator(chHallRequests chan requestAsigner.HallRequests, elevatorT
 
 			switch localElevator.Behaviour {
 			case "EB_Moving":
-				if requests.Requests_shouldStop(localElevator) {
+				if requests.RequestsShouldStop(localElevator) {
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					elevio.SetDoorOpenLamp(true)
-					requests.Requests_clearAtCurrentFloor(localElevator)
-
-					elevatorTx <- localElevator
+					requests.RequestsClearAtCurrentFloor(localElevator)
 
 					time.Sleep(3 * time.Second)
 					setAllLights(localElevator)
 					localElevator.Behaviour = "EB_DoorOpen"
+
+					elevatorTx <- localElevator
+
 					time.Sleep(10 * time.Second)
 					onDoorTimeout(localElevator)
 				}

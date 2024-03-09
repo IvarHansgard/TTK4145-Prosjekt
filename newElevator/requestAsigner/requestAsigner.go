@@ -62,7 +62,7 @@ func elevatorsToHRAInput(elevatorArray []elevator.Elevator) HRAInput {
 			if elevatorArray[1].Requests[i][j] {
 				input.HallRequests[i][j] = true
 			}
-			if elevatorArray[1].Requests[i][j] {
+			if elevatorArray[2].Requests[i][j] {
 				input.HallRequests[i][j] = true
 			}
 		}
@@ -84,14 +84,46 @@ func checkIfNewRequests(elevators, oldActiveElevators []elevator.Elevator) bool 
 	return false
 }
 
-func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState chan bool, chHallRequests chan HallRequests) {
-	var oldActiveElevators []elevator.Elevator
+func checkIfNewHallRequests(oldHallRequests, newHallRequests [4][2]bool) bool {
+	for i := 0; i < 4; i++ {
+		for j := 0; j < 2; j++ {
+			if newHallRequests["one"][i][j] != oldHallRequests["one"][i][j] {
+				return true
+			}
+			if newHallRequests["two"][i][j] != oldHallRequests["two"][i][j] {
+				return true
+			}
+			if newHallRequests["three"][i][j] != oldHallRequests["three"][i][j] {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func getHallRequests(elevators []elevator.Elevator) [4][2]bool {
+	var hallRequests [4][2]bool
+	for i := 0; i < 3; i++ {
+		for j := 0; j < 4; j++ {
+			for k := 0; k < 2; k++ {
+				if elevators[i].Requests[j][k] {
+					hallRequests[j][k] = true
+				}
+			}
+		}
+	}
+	return hallRequests
+}
+
+func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState chan bool, hallRequestsTx chan HallRequests) {
+	var oldHallRequests [4][2]bool
 
 	for {
 		select {
-		case elevators := <-chActiveElevators:
+		case elevators := <-chActiveElevators: //Bare update hall request når det er en ny request
+			incommingHallRequests := getHallRequests(elevators)
 			if <-masterState {
-				if checkIfNewRequests(elevators, oldActiveElevators) {
+				if checkIfNewHallRequests(oldHallRequests, incommingHallRequests) {
 					input := elevatorsToHRAInput(elevators)
 
 					hraExecutable := ""
@@ -124,10 +156,10 @@ func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState chan
 						return
 					}
 
-					oldActiveElevators = elevators
-					chHallRequests <- *output
+					hallRequestsTx <- *output
 				}
 			}
+
 		//asign requests to elevators
 		default:
 			time.Sleep(10 * time.Second)

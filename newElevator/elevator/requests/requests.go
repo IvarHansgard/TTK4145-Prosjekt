@@ -6,8 +6,8 @@ import (
 )
 
 type DirnBehaviourPair struct {
-	dirn      elevio.MotorDirection
-	behaviour ElevatorBehaviour
+	Dirn      elevio.MotorDirection
+	Behaviour ElevatorBehaviour
 }
 
 func requests_above(e Elevator) int {

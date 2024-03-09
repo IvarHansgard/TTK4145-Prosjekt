@@ -2,7 +2,6 @@ package make
 
 import (
 	"elevatorlib/elevator"
-	"elevatorlib/elevator/elevatorFsm"
 	"elevatorlib/elevator/runElevator"
 	"elevatorlib/network/bcast"
 	"elevatorlib/requestAsigner"
@@ -35,7 +34,8 @@ func main() {
 	activeElevators := make([]elevator.Elevator, 3)
 	chActiveElevators := make(chan []elevator.Elevator)
 
-	chHallRequests := make(chan requestAsigner.HallRequests)
+	hallRequestsTx := make(chan requestAsigner.HallRequests)
+	hallRequestsRx := make(chan requestAsigner.HallRequests)
 
 	watchdogTx := make(chan int)
 	watchdogRx := make(chan int)
@@ -44,8 +44,8 @@ func main() {
 	go bcast.Transmitter(2000, elevatorTx)
 	go bcast.Receiver(2001, elevatorRx)
 
-	go bcast.Transmitter(3000, chHallRequests)
-	go bcast.Receiver(3001, chHallRequests)
+	go bcast.Transmitter(3000, hallRequestsTx)
+	go bcast.Receiver(3001, hallRequestsRx)
 
 	go bcast.Transmitter(4000, watchdogTx)
 	go bcast.Receiver(4001, watchdogRx)
@@ -53,9 +53,9 @@ func main() {
 	go watchdog.Watchdog_checkAlive(watchdogRx, chActiveWatchdogs, 10)
 	go watchdog.Watchdog_sendAlive(id, watchdogTx)
 
-	go runElevator.RunLocalElevator(chHallRequests, elevatorTx, id)
+	go runElevator.RunLocalElevator(chActiveElevators, elevatorTx, hallRequestsRx, id)
 
-	go requestAsigner.RequestAsigner(chActiveElevators, masterState, chHallRequests) //jobbe med den her
+	go requestAsigner.RequestAsigner(chActiveElevators, masterState, hallRequestsTx) //jobbe med den her
 
 	for {
 		select {
@@ -65,13 +65,6 @@ func main() {
 
 		case activeWatchdogs := <-chActiveWatchdogs:
 			masterState <- checkMaster(id, activeWatchdogs)
-
-		case masterState := <-masterState:
-			if masterState == true {
-				elevatorFsm.ChangeToMaster()
-			} else {
-				elevatorFsm.ChangeToSlave()
-			}
 		}
 	}
 }
