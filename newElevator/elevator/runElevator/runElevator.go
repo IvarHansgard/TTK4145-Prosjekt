@@ -37,7 +37,7 @@ func onDoorTimeout(e elevator.Elevator) {
 		switch e.Behaviour {
 		case "EB_DoorOpen":
 			time.Sleep(3 * time.Second)
-			e.Requests = request.requestsClearAtCurrentFloor(e)
+			e.Requests = requests.RequestsClearAtCurrentFloor(e)
 			setAllLights(e)
 			break
 

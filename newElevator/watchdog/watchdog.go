@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-func Watchdog_checkAlive(elevatorSignal chan int, activeWatchdogs chan []bool, timeout int) {
+func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan []bool, timeout int) {
 	prevTemp := <-activeWatchdogs
 	temp := <-activeWatchdogs
 
@@ -56,6 +56,6 @@ func Watchdog_checkAlive(elevatorSignal chan int, activeWatchdogs chan []bool, t
 	}
 }
 
-func Watchdog_sendAlive(id int, watchdogTx chan int) {
+func WatchdogSendAlive(id int, watchdogTx chan int) {
 	watchdogTx <- id
 }

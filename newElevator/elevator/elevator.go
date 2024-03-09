@@ -11,7 +11,7 @@ const (
 	EB_DoorOpen ElevatorBehaviour = "door open"
 	EB_Moving   ElevatorBehaviour = "moving"
 )
-
+ 
 type Elevator struct {
 	Id        int
 	Floor     int

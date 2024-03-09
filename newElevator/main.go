@@ -50,8 +50,8 @@ func main() {
 	go bcast.Transmitter(4000, watchdogTx)
 	go bcast.Receiver(4001, watchdogRx)
 
-	go watchdog.Watchdog_checkAlive(watchdogRx, chActiveWatchdogs, 10)
-	go watchdog.Watchdog_sendAlive(id, watchdogTx)
+	go watchdog.WatchdogCheckAlive(watchdogRx, chActiveWatchdogs, 10)
+	go watchdog.WatchdogSendAlive(id, watchdogTx)
 
 	go runElevator.RunLocalElevator(chActiveElevators, elevatorTx, hallRequestsRx, id)
 

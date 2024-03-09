@@ -13,13 +13,13 @@ type DirnBehaviourPair struct {
 func RequestsAbove(e Elevator) int {
 	for f := e.Floor + 1; f < 4; f++ {
 		for btn := 0; btn < 3; btn++ {
-			if e.requests[f][btn] {
+			if e.Requests[f][btn] {
 				return 1
 			}
 		}
 	}
 	return 0
-}
+} 
 
 // i C
 /*
