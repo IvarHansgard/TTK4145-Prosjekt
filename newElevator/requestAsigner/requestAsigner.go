@@ -117,11 +117,12 @@ func getHallRequests(elevators []elevator.Elevator) [4][2]bool {
 
 func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState chan bool, hallRequestsTx chan HallRequests) {
 	var oldHallRequests [4][2]bool
+	var incommingHallRequests [4][2]bool
 
 	for {
 		select {
 		case elevators := <-chActiveElevators: //Bare update hall request når det er en ny request
-			incommingHallRequests := getHallRequests(elevators)
+			incommingHallRequests = getHallRequests(elevators)
 			if <-masterState {
 				if checkIfNewHallRequests(oldHallRequests, incommingHallRequests) {
 					input := elevatorsToHRAInput(elevators)
