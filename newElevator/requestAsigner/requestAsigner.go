@@ -116,6 +116,7 @@ func getHallRequests(elevators []elevator.Elevator) [4][2]bool {
 }
 
 func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState bool, hallRequestsTx chan HallRequests) {
+	fmt.Println("Starting requestAsigner")
 	var oldHallRequests [4][2]bool
 	var incommingHallRequests [4][2]bool
 
@@ -124,6 +125,8 @@ func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState bool
 		case elevators := <-chActiveElevators: //Bare update hall request når det er en ny request
 			incommingHallRequests = getHallRequests(elevators)
 			if masterState {
+				fmt.Println("Asigning requests to elevators")
+
 				if checkIfNewHallRequests(oldHallRequests, incommingHallRequests) {
 					input := elevatorsToHRAInput(elevators)
 
@@ -156,7 +159,7 @@ func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState bool
 						fmt.Println("json.Unmarshal error: ", err)
 						return
 					}
-
+					fmt.Println("Hall requests assigned: ", *output)
 					hallRequestsTx <- *output
 				}
 			}

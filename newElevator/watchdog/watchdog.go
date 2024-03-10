@@ -1,10 +1,12 @@
 package watchdog
 
 import (
+	"fmt"
 	"time"
 )
 
 func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan []bool, timeout int) {
+	fmt.Println("Starting watchdog")
 	prevTemp := <-activeWatchdogs
 	temp := <-activeWatchdogs
 
@@ -59,5 +61,6 @@ func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan []bool, ti
 }
 
 func WatchdogSendAlive(id int, watchdogTx chan int) {
+	fmt.Println("Starting watchdog send alive")
 	watchdogTx <- id
 }

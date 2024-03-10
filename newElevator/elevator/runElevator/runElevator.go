@@ -29,15 +29,14 @@ func setAllLights(e elevator.Elevator) {
 }
 
 func onDoorTimeout(e elevator.Elevator) elevator.Elevator {
-	fmt.Println("Door timeout")
+	fmt.Println("Door timeout started")
 	switch e.Behaviour {
 	case elevator.EB_DoorOpen:
-		fmt.Println("Elevator ", e)
 		pair := requests.RequestsChooseDirection(e)
 		e.Dirn = pair.Dirn
 		e.Behaviour = pair.Behaviour
-		fmt.Println("Elevator ", e)
 		elevio.SetDoorOpenLamp(false)
+		fmt.Println("Door closed")
 
 		switch e.Behaviour {
 		case elevator.EB_DoorOpen:
@@ -97,7 +96,7 @@ func onDoorTimeout(e elevator.Elevator) elevator.Elevator {
 		}
 	}
 */
-func onInitBetweenFloors(e elevator.Elevator) elevator.Elevator {
+func onInitBetweenFloors(e elevator.Elevator) elevator.Elevator { //fikse denne
 
 	fmt.Println("Elevator initialized between floors")
 
@@ -111,6 +110,8 @@ func onInitBetweenFloors(e elevator.Elevator) elevator.Elevator {
 }
 
 func localElevatorInit(id int) elevator.Elevator {
+	fmt.Println("Initializing elevator ", id)
+
 	elevio.Init("localhost:15657", 4)
 	elevator := elevator.Elevator_init(id)
 	setAllLights(elevator)
@@ -120,7 +121,7 @@ func localElevatorInit(id int) elevator.Elevator {
 }
 
 func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx chan elevator.Elevator, hallRequestsRx chan requestAsigner.HallRequests, id int) {
-
+	fmt.Println("Starting localElevator")
 	localElevator := localElevatorInit(id)
 
 	chButtonEvent := make(chan elevio.ButtonEvent)
@@ -140,7 +141,6 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 	localElevator.Behaviour = elevator.EB_Moving
 	elevio.SetMotorDirection(localElevator.Dirn)*/
 
-	fmt.Println("Elevator initialized")
 	for {
 		select {
 		/*
@@ -187,11 +187,10 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 				} else {
 					localElevator.Requests[button.Floor][button.Button] = true
 				}
-				break
+
 			case elevator.EB_Moving:
 				fmt.Println("Elevator is moving.")
 				localElevator.Requests[button.Floor][button.Button] = true
-				break
 
 			case elevator.EB_Idle:
 				fmt.Println("Elevator is idle.")
@@ -206,15 +205,12 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 					time.Sleep(3 * time.Second)
 					localElevator = onDoorTimeout(localElevator)
 					localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
-					break
 				case elevator.EB_Moving:
 					fmt.Println("Elevator is moving.")
 					elevio.SetMotorDirection(localElevator.Dirn)
-					break
 				case elevator.EB_Idle:
 					break
 				}
-				break
 			}
 			setAllLights(localElevator)
 			elevatorTx <- localElevator //check hall request ikke oppdater nå hall
@@ -242,7 +238,6 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 					elevio.SetMotorDirection(localElevator.Dirn)
 					elevatorTx <- localElevator
 				}
-				break
 
 			case elevator.EB_Idle:
 				for i := 0; i < 4; i++ {
