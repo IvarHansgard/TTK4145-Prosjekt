@@ -179,10 +179,10 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
 						localElevator.Requests[i][j] = HallRequests["two"][i][j]
-					}
 
+					}
 				}
-				fmt.Println("Assigned hall requests: ", HallRequests["one"])
+				fmt.Println("Assigned hall requests: ", HallRequests["two"])
 				dirn := requests.RequestsChooseDirection(localElevator)
 				localElevator.Dirn = dirn.Dirn
 				localElevator.Behaviour = dirn.Behaviour
@@ -193,16 +193,16 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
 						localElevator.Requests[i][j] = HallRequests["three"][i][j]
+
 					}
 				}
+				fmt.Println("Assigned hall requests: ", HallRequests["three"])
+				dirn := requests.RequestsChooseDirection(localElevator)
+				localElevator.Dirn = dirn.Dirn
+				localElevator.Behaviour = dirn.Behaviour
+				setAllLights(localElevator)
+				elevio.SetMotorDirection(localElevator.Dirn)
 			}
-			fmt.Println("Assigned hall requests: ", HallRequests["one"])
-			dirn := requests.RequestsChooseDirection(localElevator)
-			localElevator.Dirn = dirn.Dirn
-			localElevator.Behaviour = dirn.Behaviour
-			elevio.SetMotorDirection(localElevator.Dirn)
-			setAllLights(localElevator)
-
 		case button := <-chButtonEvent:
 
 			fmt.Println("Button press detected")
