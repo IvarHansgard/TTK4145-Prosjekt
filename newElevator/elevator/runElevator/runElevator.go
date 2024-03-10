@@ -28,7 +28,7 @@ func setAllLights(e elevator.Elevator) {
 	}
 }
 
-func onDoorTimeout(e elevator.Elevator) elevator.Elevator {
+func onDoorTimeout(e elevator.Elevator, hallRequestCleared chan [2]int) elevator.Elevator {
 	fmt.Println("Door timeout started")
 	switch e.Behaviour {
 	case elevator.EB_DoorOpen:
@@ -44,9 +44,9 @@ func onDoorTimeout(e elevator.Elevator) elevator.Elevator {
 			fmt.Println("door timer restart")
 
 			time.Sleep(3 * time.Second)
-			e = requests.RequestsClearAtCurrentFloor(e)
+			e = requests.RequestsClearAtCurrentFloor(e, hallRequestCleared)
 			fmt.Println(e)
-			onDoorTimeout(e)
+			onDoorTimeout(e, hallRequestCleared)
 			fmt.Println(e)
 
 		case elevator.EB_Moving:
@@ -100,19 +100,21 @@ func onInitBetweenFloors(e elevator.Elevator) elevator.Elevator { //fikse denne
 
 	fmt.Println("Elevator initialized between floors")
 
-	e.Dirn = requests.RequestsChooseDirection(e).Dirn
-	e.Behaviour = requests.RequestsChooseDirection(e).Behaviour
-	elevio.SetMotorDirection(e.Dirn)
+	//e.Dirn = requests.RequestsChooseDirection(e).Dirn
+	//e.Behaviour = requests.RequestsChooseDirection(e).Behaviour
 
-	fmt.Println("MotorDirection: ", e.Dirn)
+	elevio.SetMotorDirection(elevio.MD_Down)
+	e.Dirn = elevio.MD_Down
+	e.Behaviour = elevator.EB_Moving
 
 	return e
 }
 
-func localElevatorInit(id int) elevator.Elevator {
+func localElevatorInit(id, port int) elevator.Elevator {
 	fmt.Println("Initializing elevator ", id)
 
-	elevio.Init("localhost:15657", 4)
+	elevio.Init("localhost:"+fmt.Sprint(port), 4)
+	//elevio.Init("localhost:15657", 4)
 	elevator := elevator.Elevator_init(id)
 	setAllLights(elevator)
 	elevio.SetDoorOpenLamp(false)
@@ -120,9 +122,11 @@ func localElevatorInit(id int) elevator.Elevator {
 	return elevator
 }
 
-func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx chan elevator.Elevator, hallRequestsRx chan requestAsigner.HallRequests, id int) {
+func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx chan elevator.Elevator,
+	localHallRequestsTx chan [][2]bool, assignedHallRequestsRx chan requestAsigner.HallRequests, hallRequestCleared chan [2]int, id, port int) {
 	fmt.Println("Starting localElevator")
-	localElevator := localElevatorInit(id)
+	localElevator := localElevatorInit(id, port)
+	localHallRequests := [][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
 
 	chButtonEvent := make(chan elevio.ButtonEvent)
 	chFloor := make(chan int)
@@ -140,7 +144,9 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 	/*localElevator.Dirn = elevio.MD_Up
 	localElevator.Behaviour = elevator.EB_Moving
 	elevio.SetMotorDirection(localElevator.Dirn)*/
-
+	if localElevator.Floor == -1 {
+		localElevator = onInitBetweenFloors(localElevator)
+	}
 	for {
 		select {
 		/*
@@ -153,20 +159,36 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 					}
 					chFloorTimeout <- false
 		*/
-		case HallRequests := <-hallRequestsRx:
+		case HallRequests := <-assignedHallRequestsRx:
 			switch id {
 			case 0:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
 						localElevator.Requests[i][j] = HallRequests["one"][i][j]
+
 					}
 				}
+				fmt.Println("Assigned hall requests: ", HallRequests["one"])
+				dirn := requests.RequestsChooseDirection(localElevator)
+				localElevator.Dirn = dirn.Dirn
+				localElevator.Behaviour = dirn.Behaviour
+				setAllLights(localElevator)
+				elevio.SetMotorDirection(localElevator.Dirn)
+
 			case 1:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
 						localElevator.Requests[i][j] = HallRequests["two"][i][j]
 					}
+
 				}
+				fmt.Println("Assigned hall requests: ", HallRequests["one"])
+				dirn := requests.RequestsChooseDirection(localElevator)
+				localElevator.Dirn = dirn.Dirn
+				localElevator.Behaviour = dirn.Behaviour
+				setAllLights(localElevator)
+				elevio.SetMotorDirection(localElevator.Dirn)
+
 			case 2:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
@@ -174,6 +196,12 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 					}
 				}
 			}
+			fmt.Println("Assigned hall requests: ", HallRequests["one"])
+			dirn := requests.RequestsChooseDirection(localElevator)
+			localElevator.Dirn = dirn.Dirn
+			localElevator.Behaviour = dirn.Behaviour
+			elevio.SetMotorDirection(localElevator.Dirn)
+			setAllLights(localElevator)
 
 		case button := <-chButtonEvent:
 
@@ -183,18 +211,40 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 				fmt.Println("Door is open")
 				if requests.RequestsShouldClearImmediately(localElevator, button.Floor, button.Button) {
 					time.Sleep(3 * time.Second)
-					localElevator = onDoorTimeout(localElevator)
+					localElevator = onDoorTimeout(localElevator, hallRequestCleared)
+					elevatorTx <- localElevator
+
 				} else {
-					localElevator.Requests[button.Floor][button.Button] = true
+					if button.Button == elevio.BT_HallDown || button.Button == elevio.BT_HallUp {
+						localHallRequests[button.Floor][button.Button] = true
+						localHallRequestsTx <- localHallRequests
+					} else {
+						localElevator.Requests[button.Floor][button.Button] = true
+						elevatorTx <- localElevator
+					}
 				}
 
 			case elevator.EB_Moving:
 				fmt.Println("Elevator is moving.")
-				localElevator.Requests[button.Floor][button.Button] = true
+				if button.Button == elevio.BT_HallDown || button.Button == elevio.BT_HallUp {
+					localHallRequests[button.Floor][button.Button] = true
+					localHallRequestsTx <- localHallRequests
+				} else {
+					localElevator.Requests[button.Floor][button.Button] = true
+					elevatorTx <- localElevator
+				}
 
 			case elevator.EB_Idle:
 				fmt.Println("Elevator is idle.")
-				localElevator.Requests[button.Floor][button.Button] = true
+				if button.Button == elevio.BT_HallDown || button.Button == elevio.BT_HallUp {
+					localHallRequests[button.Floor][button.Button] = true
+					localHallRequestsTx <- localHallRequests
+					elevatorTx <- localElevator
+
+				} else {
+					localElevator.Requests[button.Floor][button.Button] = true
+					elevatorTx <- localElevator
+				}
 				pair := requests.RequestsChooseDirection(localElevator)
 				localElevator.Dirn = pair.Dirn
 				localElevator.Behaviour = pair.Behaviour
@@ -203,11 +253,13 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 					fmt.Println("Door is open")
 					elevio.SetDoorOpenLamp(true)
 					time.Sleep(3 * time.Second)
-					localElevator = onDoorTimeout(localElevator)
-					localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
+					localElevator = onDoorTimeout(localElevator, hallRequestCleared)
+					localElevator = requests.RequestsClearAtCurrentFloor(localElevator, hallRequestCleared)
+					elevatorTx <- localElevator
 				case elevator.EB_Moving:
 					fmt.Println("Elevator is moving.")
 					elevio.SetMotorDirection(localElevator.Dirn)
+					elevatorTx <- localElevator
 				case elevator.EB_Idle:
 					break
 				}
@@ -218,6 +270,7 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 		case floor := <-chFloor:
 			localElevator.Floor = floor
 			elevio.SetFloorIndicator(localElevator.Floor)
+			elevatorTx <- localElevator
 
 			switch localElevator.Behaviour {
 			case elevator.EB_Moving:
@@ -226,15 +279,14 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					elevio.SetDoorOpenLamp(true)
 					fmt.Println("Door open")
-					localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
-
+					localElevator = requests.RequestsClearAtCurrentFloor(localElevator, hallRequestCleared)
 					fmt.Println("Door open timer started")
 					localElevator.Behaviour = elevator.EB_DoorOpen
 					elevatorTx <- localElevator
 
 					time.Sleep(3 * time.Second)
 					setAllLights(localElevator)
-					localElevator = onDoorTimeout(localElevator)
+					localElevator = onDoorTimeout(localElevator, hallRequestCleared)
 					elevio.SetMotorDirection(localElevator.Dirn)
 					elevatorTx <- localElevator
 				}
@@ -246,11 +298,11 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 							localElevator.Dirn = requests.RequestsChooseDirection(localElevator).Dirn
 							localElevator.Behaviour = requests.RequestsChooseDirection(localElevator).Behaviour
 							elevio.SetMotorDirection(localElevator.Dirn)
-							elevatorTx <- localElevator
 							break
 						}
 					}
 				}
+				elevatorTx <- localElevator
 
 			default:
 				break
@@ -259,12 +311,12 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 		case obstruction := <-chObstructionSwitch:
 			if obstruction {
 				elevio.SetMotorDirection(elevio.MD_Stop)
-				//set behavior
-
+				localElevator.Behaviour = elevator.EB_DoorOpen
+				elevatorTx <- localElevator
 			} else {
 				elevio.SetMotorDirection(localElevator.Dirn)
-				//set behavior
-
+				localElevator.Behaviour = elevator.EB_Moving
+				elevatorTx <- localElevator
 			}
 		case <-chStopButton:
 			//set behavior

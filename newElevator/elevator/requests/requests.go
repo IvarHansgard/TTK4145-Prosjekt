@@ -116,7 +116,6 @@ func RequestsChooseDirection(e Elevator) DirnBehaviourPair {
 		} else {
 			return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
 		}
-		
 
 	default:
 		return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
@@ -206,34 +205,46 @@ int RequestsShouldClearImmediately(Elevator e, int btn_floor, Button btn_type){
     }
 }*/
 
-func RequestsClearAtCurrentFloor(e Elevator) Elevator {
-
-	for btn := 0; btn < 3; btn++ {
-		e.Requests[e.Floor][btn] = false
-	}
-
-	/*case CV_InDirn:
-		e.Requests[e.Floor][B_Cab] = 0
-		switch e.Dirn {
-		case D_Up:
-			if !RequestsAbove(e) && !e.Requests[e.Floor][B_HallUp] {
-				e.Requests[e.Floor][B_HallDown] = 0
+func RequestsClearAtCurrentFloor(e Elevator, hallRequestCleared chan [2]int) Elevator {
+	/*
+		    if e.Dirn == elevio.MD_Up {
+				hallRequestCleared <- [2]int{e.Floor, 0}
+			} else {
+				hallRequestCleared <- [2]int{e.Floor, 1}
 			}
-			e.Requests[e.Floor][B_HallUp] = 0
-		case D_Down:
-			if !RequestsBelow(e) && !e.Requests[e.Floor][B_HallDown] {
-				e.Requests[e.Floor][B_HallUp] = 0
+
+			for btn := 0; btn < 3; btn++ {
+				e.Requests[e.Floor][btn] = false
 			}
-			e.Requests[e.Floor][B_HallDown] = 0
-		case D_Stop:
-			fallthrough
-		default:
-			e.Requests[e.Floor][B_HallUp] = 0
-			e.Requests[e.Floor][B_HallDown] = 0
+	*/
+	///*case CV_InDirn:
+	e.Requests[e.Floor][elevio.BT_Cab] = false
+	switch e.Dirn {
+	case elevio.MD_Up:
+		if !RequestsAbove(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
+			e.Requests[e.Floor][elevio.BT_HallDown] = false
+			hallRequestCleared <- [2]int{e.Floor, 1}
 		}
+		e.Requests[e.Floor][elevio.BT_HallUp] = false
+	case elevio.MD_Down:
+		if !RequestsBelow(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
+			e.Requests[e.Floor][elevio.BT_HallUp] = false
+			hallRequestCleared <- [2]int{e.Floor, 0}
+		}
+		e.Requests[e.Floor][elevio.BT_HallDown] = false
+		hallRequestCleared <- [2]int{e.Floor, 1}
+	case elevio.MD_Stop:
+		fallthrough
 	default:
-		break
-	}*/
+		e.Requests[e.Floor][elevio.BT_HallUp] = false
+		e.Requests[e.Floor][elevio.BT_HallDown] = false
+		hallRequestCleared <- [2]int{e.Floor, 0}
+		hallRequestCleared <- [2]int{e.Floor, 1}
+	}
+	/*
+		default:
+			break
+		}*/
 	return e
 
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan []bool, timeout int) {
-	fmt.Println("Starting watchdog")
+	fmt.Println("Starting watchdog check alive")
 	prevTemp := <-activeWatchdogs
 	temp := <-activeWatchdogs
 
@@ -62,5 +62,8 @@ func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan []bool, ti
 
 func WatchdogSendAlive(id int, watchdogTx chan int) {
 	fmt.Println("Starting watchdog send alive")
-	watchdogTx <- id
+	for {
+		watchdogTx <- id
+		time.Sleep(1 * time.Second)
+	}
 }
