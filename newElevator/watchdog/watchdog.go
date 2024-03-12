@@ -5,10 +5,10 @@ import (
 	"time"
 )
 
-func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan []bool, timeout int) {
+func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan [3]bool, timeout int) {
 	fmt.Println("Starting watchdog check alive")
-	prevTemp := <-activeWatchdogs
-	temp := <-activeWatchdogs
+	prevTemp := [3]bool{false, false, false}
+	temp := [3]bool{false, false, false}
 
 	initialTimeout := timeout
 	timeoutElevator0 := timeout
@@ -28,22 +28,25 @@ func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan []bool, ti
 		}
 
 		//decrease timeout
+
 		timeoutElevator0--
+
 		timeoutElevator1--
+
 		timeoutElevator2--
 
 		//check if any of the elevators have timed out and set the elevators active status to false
-		if timeoutElevator0 == 0 {
+		if timeoutElevator0 <= 0 {
 			temp[0] = false
 		} else {
 			temp[0] = true
 		}
-		if timeoutElevator1 == 0 {
+		if timeoutElevator1 <= 0 {
 			temp[1] = false
 		} else {
 			temp[1] = true
 		}
-		if timeoutElevator2 == 0 {
+		if timeoutElevator2 <= 0 {
 			temp[2] = false
 		} else {
 			temp[2] = true
@@ -55,8 +58,6 @@ func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan []bool, ti
 				prevTemp = temp
 			}
 		}
-
-		time.Sleep(1 * time.Second)
 	}
 }
 

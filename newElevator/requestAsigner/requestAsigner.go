@@ -23,7 +23,7 @@ type HRAElevState struct {
 }
 
 type HRAInput struct {
-	HallRequests [][2]bool               `json:"hallRequests"`
+	HallRequests [4][2]bool              `json:"hallRequests"`
 	States       map[string]HRAElevState `json:"states"`
 }
 
@@ -53,7 +53,7 @@ func elevatorToHRAElevState(e elevator.Elevator) HRAElevState {
 	return hra
 }
 
-func elevatorsToHRAInput(hallRequest [][2]bool, elevatorArray []elevator.Elevator) HRAInput {
+func elevatorsToHRAInput(hallRequest [4][2]bool, elevatorArray []elevator.Elevator) HRAInput {
 	var input HRAInput
 	inputStates := make(map[string]HRAElevState)
 
@@ -76,21 +76,49 @@ func elevatorsToHRAInput(hallRequest [][2]bool, elevatorArray []elevator.Elevato
 	return input
 }
 
-func compareHallRequests(oldHallRequests, newHallRequests [][2]bool) [][2]bool {
-	fmt.Println("Comparing hall requests")
-	fmt.Println("Old hall requests:", oldHallRequests)
-	fmt.Println("New hall requests:", newHallRequests)
+/*
+	func compareHallRequests(oldHallRequests, newHallRequests [][2]bool) [][2]bool {
+		fmt.Println("Comparing hall requests")
+		fmt.Println("Old hall requests:", oldHallRequests)
+		fmt.Println("New hall requests:", newHallRequests)
 
-	for i := 0; i < len(newHallRequests); i++ {
-		for j := 0; j < 2; j++ {
-			if newHallRequests[i][j] != oldHallRequests[i][j] {
-				oldHallRequests[i][j] = newHallRequests[i][j]
+		for i := 0; i < len(newHallRequests); i++ {
+			for j := 0; j < 2; j++ {
+				if newHallRequests[i][j] != oldHallRequests[i][j] {
+					oldHallRequests[i][j] = newHallRequests[i][j]
+				}
 			}
 		}
+		return oldHallRequests
 	}
-	return oldHallRequests
+*/
+func checkifNewHallRequest(choldHallRequests chan [4][2]bool, oldHallRequests, newHallRequests [4][2]bool) {
+
+	fmt.Println("checking if new hall request")
+	fmt.Println("new requests:", newHallRequests)
+	fmt.Println("old requests:", oldHallRequests)
+
+	for i := 0; i < 4; i++ {
+		for j := 0; j < 2; j++ {
+			if !oldHallRequests[i][j] == newHallRequests[i][j] {
+				fmt.Println("true")
+				choldHallRequests <- newHallRequests
+				return
+			}
+
+		}
+
+	}
 }
 
+/*
+func addHallRequests(button elevio.ButtonEvent) [2]int {
+	var buttonArray [2]int
+	buttonArray[0] = button.Floor
+	buttonArray[1] = int(button.Button)
+	return buttonArray
+}
+*/
 /*
 func checkIfNewRequests(elevators, oldActiveElevators []elevator.Elevator) bool {
 	for i := 0; i < 3; i++ {
@@ -104,7 +132,9 @@ func checkIfNewRequests(elevators, oldActiveElevators []elevator.Elevator) bool 
 	}
 	return false
 }
-*/
+*//*
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"*/
 /*
 	func getHallRequests(elevators []elevator.Elevator) [4][2]bool {
 		var hallRequests [4][2]bool
@@ -121,72 +151,105 @@ func checkIfNewRequests(elevators, oldActiveElevators []elevator.Elevator) bool 
 		return hallRequests
 	}
 */
-func RequestAsigner(chActiveElevators chan []elevator.Elevator, masterState bool, localHallRequestsRx chan [][2]bool, hallRequestsTx chan HallRequests, chHallRequestCleared chan [2]int) {
+func setIsNewHallRequest(isNewHallRequest chan bool, state bool) {
+	isNewHallRequest <- state
+	return
+}
+func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators chan []elevator.Elevator, chMasterState chan bool, chClearedHallRequests chan elevio.ButtonEvent, hallRequestsTx chan HallRequests) {
 	fmt.Println("Starting requestAsigner")
-	oldHallRequests := [][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
+
+	choldHallRequests := make(chan [4][2]bool)
+
+	//var HallRequests [4][2]bool
+	HallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
+	oldHallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
+
+	isNewHallRequest := make(chan bool)
+
+	var elevatorStates []elevator.Elevator
+	var masterState bool
 
 	for {
 		select {
-		case localHallrequests := <-localHallRequestsRx:
-			for i := 0; i < len(localHallrequests); i++ {
-				for j := 0; j < 2; j++ {
-					if localHallrequests[i][j] {
-						if !oldHallRequests[i][j] {
-							oldHallRequests[i][j] = true
-						}
+		/*case localHallrequests := <-localHallRequestsRx:
+		for i := 0; i < len(localHallrequests); i++ {
+			for j := 0; j < 2; j++ {
+				if localHallrequests[i][j] {
+					if !oldHallRequests[i][j] {
+						oldHallRequests[i][j] = true
 					}
 				}
 			}
-		case hallRequestCleared := <-chHallRequestCleared:
-			oldHallRequests[hallRequestCleared[0]][hallRequestCleared[1]] = false
+		}*/
+		case temp := <-chMasterState:
+			masterState = temp
+		case clearedHallRequest := <-chClearedHallRequests:
+			HallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
 
-		case elevators := <-chActiveElevators:
-			if masterState {
-				fmt.Println("Asigning requests to elevators")
-				/*
-					if len(oldHallRequests) == 0 {
-						fmt.Println("No new requests")
-						break
+		case activeElevators := <-chActiveElevators:
+			elevatorStates = activeElevators
+
+		case button := <-chNewHallRequest:
+			fmt.Println("Hall request recieved", button)
+			HallRequests[button.Floor][int(button.Button)] = true
+			go checkifNewHallRequest(choldHallRequests, oldHallRequests, HallRequests)
+
+		case temp := <-choldHallRequests:
+			oldHallRequests = temp
+			fmt.Println("old hall request set to", temp)
+			go setIsNewHallRequest(isNewHallRequest, true)
+
+		case newHallRequest := <-isNewHallRequest:
+			fmt.Println("newHallRequest is", newHallRequest)
+			if newHallRequest {
+				fmt.Println("new hall request")
+				if masterState {
+					fmt.Println("Asigning requests to elevators")
+					/*
+						if len(oldHallRequests) == 0 {
+							fmt.Println("No new requests")
+							break
+						}
+					*/
+
+					input := elevatorsToHRAInput(HallRequests, elevatorStates)
+
+					hraExecutable := ""
+					switch runtime.GOOS {
+					case "linux":
+						hraExecutable = "hall_request_assigner"
+					case "windows":
+						hraExecutable = "hall_request_assigner.exe"
+					default:
+						panic("OS not supported")
 					}
-				*/
 
-				input := elevatorsToHRAInput(oldHallRequests, elevators)
+					jsonBytes, err := json.Marshal(input)
+					if err != nil {
+						fmt.Println("json.Marshal error: ", err)
+						return
+					}
 
-				hraExecutable := ""
-				switch runtime.GOOS {
-				case "linux":
-					hraExecutable = "hall_request_assigner"
-				case "windows":
-					hraExecutable = "hall_request_assigner.exe"
-				default:
-					panic("OS not supported")
+					ret, err := exec.Command(hraExecutable, "-i", string(jsonBytes)).CombinedOutput()
+					if err != nil {
+						fmt.Println("exec.Command error: ", err)
+						fmt.Println(string(ret))
+						return
+					}
+
+					output := new(map[string][4][2]bool)
+					err = json.Unmarshal(ret, &output)
+					if err != nil {
+						fmt.Println("json.Unmarshal error: ", err)
+						return
+					}
+					fmt.Println("Hall requests assigned: ", *output)
+					hallRequestsTx <- *output
 				}
-
-				jsonBytes, err := json.Marshal(input)
-				if err != nil {
-					fmt.Println("json.Marshal error: ", err)
-					return
-				}
-
-				ret, err := exec.Command(hraExecutable, "-i", string(jsonBytes)).CombinedOutput()
-				if err != nil {
-					fmt.Println("exec.Command error: ", err)
-					fmt.Println(string(ret))
-					return
-				}
-
-				output := new(map[string][4][2]bool)
-				err = json.Unmarshal(ret, &output)
-				if err != nil {
-					fmt.Println("json.Unmarshal error: ", err)
-					return
-				}
-				fmt.Println("Hall requests assigned: ", *output)
-				hallRequestsTx <- *output
 			}
 			//asign requests to elevators
 		default:
-			time.Sleep(10 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 	}
 }

@@ -180,9 +180,7 @@ int RequestsShouldStop(Elevator e){
 }*/
 
 func RequestsShouldClearImmediately(e Elevator, btn_floor int, btn_type elevio.ButtonType) bool {
-
-	return e.Floor == btn_floor
-
+	return e.Floor == btn_floor && (e.Dirn == elevio.MD_Up && btn_type == elevio.BT_HallUp) || (e.Dirn == elevio.MD_Down && btn_type == elevio.BT_HallDown) || e.Dirn == elevio.MD_Stop || btn_type == elevio.BT_Cab
 }
 
 //i C
@@ -205,7 +203,7 @@ int RequestsShouldClearImmediately(Elevator e, int btn_floor, Button btn_type){
     }
 }*/
 
-func RequestsClearAtCurrentFloor(e Elevator, hallRequestCleared chan [2]int) Elevator {
+func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 	/*
 		    if e.Dirn == elevio.MD_Up {
 				hallRequestCleared <- [2]int{e.Floor, 0}
@@ -223,23 +221,25 @@ func RequestsClearAtCurrentFloor(e Elevator, hallRequestCleared chan [2]int) Ele
 	case elevio.MD_Up:
 		if !RequestsAbove(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
-			hallRequestCleared <- [2]int{e.Floor, 1}
 		}
+		/*if RequestsAbove(e) && e.Requests[e.Floor][elevio.BT_HallUp] && e.Requests[e.Floor][elevio.BT_HallDown] && !RequestsBelow(e){
+			e.Requests[e.Floor][elevio.BT_HallDown]=false
+			hallRequestCleared <- [2]int{e.Floor, 1}
+			e.Behavior=EB_DoorOpen
+			elevatorTx<-e
+
+		}*/
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
 	case elevio.MD_Down:
 		if !RequestsBelow(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
 			e.Requests[e.Floor][elevio.BT_HallUp] = false
-			hallRequestCleared <- [2]int{e.Floor, 0}
 		}
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
-		hallRequestCleared <- [2]int{e.Floor, 1}
 	case elevio.MD_Stop:
 		fallthrough
 	default:
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
-		hallRequestCleared <- [2]int{e.Floor, 0}
-		hallRequestCleared <- [2]int{e.Floor, 1}
 	}
 	/*
 		default:
@@ -247,6 +247,21 @@ func RequestsClearAtCurrentFloor(e Elevator, hallRequestCleared chan [2]int) Ele
 		}*/
 	return e
 
+}
+
+func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
+	var buttonToclear elevio.ButtonEvent
+
+	switch e.Dirn {
+	case elevio.MD_Down:
+		buttonToclear.Floor = e.Floor
+		buttonToclear.Button = elevio.BT_HallDown
+	case elevio.MD_Up:
+		buttonToclear.Floor = e.Floor
+		buttonToclear.Button = elevio.BT_HallUp
+	}
+	fmt.Println("buttonToclear is:", buttonToclear)
+	return buttonToclear
 }
 
 /*

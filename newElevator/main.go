@@ -3,6 +3,7 @@ package main
 import (
 	"elevatorlib/elevator"
 	"elevatorlib/elevator/runElevator"
+	"elevatorlib/elevio"
 	"elevatorlib/network/bcast"
 	"elevatorlib/requestAsigner"
 	"elevatorlib/watchdog"
@@ -10,15 +11,21 @@ import (
 	"fmt"
 )
 
-func checkMaster(id int, activeElevators []bool) bool {
+func checkMaster(chMasterState chan bool, id int, activeElevators [3]bool) {
 	fmt.Println("activeElevators changed checking master")
-	if activeElevators[id-1] == true && id != 0 {
-		fmt.Println("im not master")
-		return false
+	if id != 0 {
+		if activeElevators[id-1] || activeElevators[0] {
+			fmt.Println("Elevator:", id, "is slave")
+			chMasterState <- false
+		} else {
+			fmt.Println("Elevator:", id, "is master")
+			chMasterState <- true
+		}
 	} else {
-		fmt.Println("im master")
-		return true
+		fmt.Println("Elevator:", id, "is master")
+		chMasterState <- true
 	}
+	return
 }
 
 type hallRequests map[string][][2]int
@@ -31,16 +38,7 @@ func main() {
 	flag.IntVar(&port, "port", 15657, "port of this elevator")
 
 	flag.Parse()
-
-	var masterState bool
-
 	//check master state based on flag input
-	if id == 0 {
-		masterState = true
-	} else {
-		masterState = false
-	}
-
 	//chanels
 	chMasterState := make(chan bool)
 
@@ -51,14 +49,14 @@ func main() {
 
 	assignedHallRequestsTx := make(chan requestAsigner.HallRequests)
 	assignedHallRequestsRx := make(chan requestAsigner.HallRequests)
-	localHallRequestsTx := make(chan [][2]bool)
-	localHallRequestsRx := make(chan [][2]bool)
-	chHallRequestClearedTx := make(chan [2]int)
-	chHallRequestClearedRx := make(chan [2]int)
+	chHallRequestClearedTx := make(chan elevio.ButtonEvent)
+	chHallRequestClearedRx := make(chan elevio.ButtonEvent)
+	chNewHallRequestTx := make(chan elevio.ButtonEvent)
+	chNewHallRequestRx := make(chan elevio.ButtonEvent)
 
 	watchdogTx := make(chan int)
 	watchdogRx := make(chan int)
-	chActiveWatchdogs := make(chan []bool)
+	chActiveWatchdogs := make(chan [3]bool)
 
 	fmt.Println("Starting broadcast of, elevator, hallRequest and watchdog")
 	//transmitter and receiver for elevator states
@@ -69,8 +67,8 @@ func main() {
 	go bcast.Transmitter(3001, assignedHallRequestsTx)
 	go bcast.Receiver(3001, assignedHallRequestsRx)
 	//transmitter and receiver for local hall requests
-	go bcast.Transmitter(3002, localHallRequestsTx)
-	go bcast.Receiver(3002, localHallRequestsRx)
+	go bcast.Transmitter(3002, chNewHallRequestTx)
+	go bcast.Receiver(3002, chNewHallRequestRx)
 	//transmitter and receiver for cleared hall requests
 	go bcast.Transmitter(3003, chHallRequestClearedTx)
 	go bcast.Receiver(3003, chHallRequestClearedRx)
@@ -85,11 +83,10 @@ func main() {
 	go watchdog.WatchdogSendAlive(id, watchdogTx)
 
 	//functions for running the local elevator
-	go runElevator.RunLocalElevator(chActiveElevators, elevatorTx, localHallRequestsTx, assignedHallRequestsRx, chHallRequestClearedTx, id, port)
+	go runElevator.RunLocalElevator(chActiveElevators, elevatorTx, chNewHallRequestTx, assignedHallRequestsRx, chHallRequestClearedTx, id, port)
 
 	//function for assigning hall request to slave elevators
-
-	go requestAsigner.RequestAsigner(chActiveElevators, masterState, localHallRequestsRx, assignedHallRequestsTx, chHallRequestClearedRx) //jobbe med den her
+	go requestAsigner.RequestAsigner(chNewHallRequestRx, chActiveElevators, chMasterState, chHallRequestClearedRx, assignedHallRequestsTx) //jobbe med den her
 
 	fmt.Println("Starting main loop")
 	for {
@@ -104,9 +101,9 @@ func main() {
 					activeElevators[i].Behaviour = elevator.EB_Disconnected
 				}
 			}
-			masterState = checkMaster(id, activeWatchdogs)
-			chMasterState <- masterState
+			go checkMaster(chMasterState, id, activeWatchdogs)
 			//assign lost elevators orders to other elevators
+
 		}
 	}
 }
