@@ -132,7 +132,7 @@ func checkIfNewRequests(elevators, oldActiveElevators []elevator.Elevator) bool 
 	}
 	return false
 }
-*//*
+*/ /*
 git config --global user.name "Your Name"
 git config --global user.email "your.email@example.com"*/
 /*
