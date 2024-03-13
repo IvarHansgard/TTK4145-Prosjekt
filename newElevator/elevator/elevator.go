@@ -2,7 +2,7 @@ package elevator
 
 import (
 	"elevatorlib/elevio"
-)  
+)
 
 type ElevatorBehaviour string
 
@@ -15,7 +15,7 @@ const (
 
 type Elevator struct {
 	Id       int
-	Floor    int 
+	Floor    int
 	Dirn     elevio.MotorDirection
 	Requests [4][3]bool
 	//hallRequests [4][2]bool

@@ -48,7 +48,7 @@ func Init(addr string, numFloors int) {
 		panic(err.Error())
 	}
 	_initialized = true
-}
+} 
 
 func SetMotorDirection(dir MotorDirection) {
 	write([4]byte{1, byte(dir), 0, 0})

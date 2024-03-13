@@ -94,9 +94,9 @@ func elevatorsToHRAInput(hallRequest [4][2]bool, elevatorArray []elevator.Elevat
 */
 func checkifNewHallRequest(choldHallRequests chan [4][2]bool, oldHallRequests, newHallRequests [4][2]bool) {
 
-	//fmt.Println("checking if new hall request")
-	//fmt.Println("new requests:", newHallRequests)
-	//fmt.Println("old requests:", oldHallRequests)
+	fmt.Println("checking if new hall request")
+	fmt.Println("new requests:", newHallRequests)
+	fmt.Println("old requests:", oldHallRequests)
 
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 2; j++ {
@@ -195,7 +195,7 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 			elevatorStates = activeElevators
 
 		case button := <-chNewHallRequest:
-			//fmt.Println("Hall request recieved", button)
+			fmt.Println("Hall request recieved", button)
 			HallRequests[button.Floor][int(button.Button)] = true
 			go checkifNewHallRequest(choldHallRequests, oldHallRequests, HallRequests)
 
