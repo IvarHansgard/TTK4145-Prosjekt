@@ -29,12 +29,12 @@ type HRAInput struct {
 
 func elevatorToHRAElevState(e elevator.Elevator) HRAElevState {
 	var hra HRAElevState
-	fmt.Println("Converting elevator to HRAElevState:", e)
+	//fmt.Println("Converting elevator to HRAElevState:", e)
 
 	if e.Behaviour == "" {
 		e.Behaviour = elevator.EB_Disconnected
 	}
-	fmt.Println("Elevator behaviour:", string(e.Behaviour))
+	//fmt.Println("Elevator behaviour:", string(e.Behaviour))
 	hra.Behavior = string(e.Behaviour)
 	hra.Floor = e.Floor
 
@@ -94,9 +94,9 @@ func elevatorsToHRAInput(hallRequest [4][2]bool, elevatorArray []elevator.Elevat
 */
 func checkifNewHallRequest(choldHallRequests chan [4][2]bool, oldHallRequests, newHallRequests [4][2]bool) {
 
-	fmt.Println("checking if new hall request")
-	fmt.Println("new requests:", newHallRequests)
-	fmt.Println("old requests:", oldHallRequests)
+	//fmt.Println("checking if new hall request")
+	//fmt.Println("new requests:", newHallRequests)
+	//fmt.Println("old requests:", oldHallRequests)
 
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 2; j++ {
@@ -195,21 +195,21 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 			elevatorStates = activeElevators
 
 		case button := <-chNewHallRequest:
-			fmt.Println("Hall request recieved", button)
+			//fmt.Println("Hall request recieved", button)
 			HallRequests[button.Floor][int(button.Button)] = true
 			go checkifNewHallRequest(choldHallRequests, oldHallRequests, HallRequests)
 
 		case temp := <-choldHallRequests:
 			oldHallRequests = temp
-			fmt.Println("old hall request set to", temp)
+			//fmt.Println("old hall request set to", temp)
 			go setIsNewHallRequest(isNewHallRequest, true)
 
 		case newHallRequest := <-isNewHallRequest:
-			fmt.Println("newHallRequest is", newHallRequest)
+			//fmt.Println("newHallRequest is", newHallRequest)
 			if newHallRequest {
-				fmt.Println("new hall request")
+				//fmt.Println("new hall request")
 				if masterState {
-					fmt.Println("Asigning requests to elevators")
+					//fmt.Println("Asigning requests to elevators")
 					/*
 						if len(oldHallRequests) == 0 {
 							fmt.Println("No new requests")
@@ -248,8 +248,11 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 						fmt.Println("json.Unmarshal error: ", err)
 						return
 					}
-					fmt.Println("Hall requests assigned: ", *output)
+
 					hallRequestsTx <- *output
+					fmt.Println("Hall requests assigned: ", *output)
+					fmt.Println("old", oldHallRequests)
+					fmt.Println("new", HallRequests)
 				}
 			}
 			//asign requests to elevators

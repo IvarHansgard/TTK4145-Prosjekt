@@ -78,9 +78,8 @@ func main() {
 	go bcast.Receiver(4001, watchdogRx)
 
 	//functions for checking the watchdog and sending alive signal
-
-	go watchdog.WatchdogCheckAlive(watchdogRx, chActiveWatchdogs, 10)
 	go watchdog.WatchdogSendAlive(id, watchdogTx)
+	go watchdog.WatchdogCheckAlive(watchdogRx, chActiveWatchdogs, 10)
 
 	//functions for running the local elevator
 	go runElevator.RunLocalElevator(chActiveElevators, elevatorTx, chNewHallRequestTx, assignedHallRequestsRx, chHallRequestClearedTx, id, port)

@@ -26,7 +26,7 @@ func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan [3]bool, t
 				timeoutElevator2 = initialTimeout
 			}
 		}
-
+ 
 		//decrease timeout
 
 		timeoutElevator0--

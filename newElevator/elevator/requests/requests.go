@@ -65,7 +65,6 @@ static int RequestsBelow(Elevator e){
 func RequestsHere(e Elevator) bool {
 	for btn := 0; btn < 3; btn++ {
 		if e.Requests[e.Floor][btn] {
-			fmt.Println("RequestsHere")
 			return true
 		}
 	}
@@ -87,37 +86,51 @@ func RequestsChooseDirection(e Elevator) DirnBehaviourPair {
 	switch e.Dirn {
 	case elevio.MD_Up:
 		if RequestsAbove(e) {
+			fmt.Println("md up, request above")
 			return DirnBehaviourPair{elevio.MD_Up, EB_Moving}
 		} else if RequestsBelow(e) {
+			fmt.Println("md up, request below")
 			return DirnBehaviourPair{elevio.MD_Down, EB_Moving}
 		} else if RequestsHere(e) {
+			fmt.Println("md up, request here")
 			return DirnBehaviourPair{elevio.MD_Down, EB_DoorOpen}
+
 		} else {
+			fmt.Println("md up, idle")
 			return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_Idle}
 		}
 	case elevio.MD_Down:
 		if RequestsBelow(e) {
+			fmt.Println("md down, requests below")
 			return DirnBehaviourPair{elevio.MD_Down, EB_Moving}
 		} else if RequestsHere(e) {
+			fmt.Println("md down, requests here")
 			return DirnBehaviourPair{elevio.MD_Down, EB_DoorOpen}
 		} else if RequestsAbove(e) {
+			fmt.Println("md down, requests above")
 			return DirnBehaviourPair{elevio.MD_Up, EB_Moving}
 		} else {
+			fmt.Println("md down, idle")
 			return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
 		}
 
 	case elevio.MD_Stop:
 		if RequestsHere(e) {
+			fmt.Println("md stop, requests here")
 			return DirnBehaviourPair{elevio.MD_Stop, EB_DoorOpen}
 		} else if RequestsAbove(e) {
+			fmt.Println("md stop, requests above")
 			return DirnBehaviourPair{elevio.MD_Up, EB_Moving}
 		} else if RequestsBelow(e) {
+			fmt.Println("md stop, requests below")
 			return DirnBehaviourPair{elevio.MD_Down, EB_Moving}
 		} else {
+			fmt.Println("md stop, idle")
 			return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
 		}
 
 	default:
+		fmt.Println("default")
 		return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
 	}
 }
@@ -222,13 +235,13 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 		if !RequestsAbove(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
 		}
-		/*if RequestsAbove(e) && e.Requests[e.Floor][elevio.BT_HallUp] && e.Requests[e.Floor][elevio.BT_HallDown] && !RequestsBelow(e){
-			e.Requests[e.Floor][elevio.BT_HallDown]=false
-			hallRequestCleared <- [2]int{e.Floor, 1}
-			e.Behavior=EB_DoorOpen
-			elevatorTx<-e
+		/*
+			if RequestsAbove(e) && e.Requests[e.Floor][elevio.BT_HallUp] && e.Requests[e.Floor][elevio.BT_HallDown] && !RequestsBelow(e){
+				e.Requests[e.Floor][elevio.BT_HallDown]=false
+				e.Behaviour=elevator.EB_DoorOpen
 
-		}*/
+
+			}*/
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
 	case elevio.MD_Down:
 		if !RequestsBelow(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
@@ -259,6 +272,14 @@ func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 	case elevio.MD_Up:
 		buttonToclear.Floor = e.Floor
 		buttonToclear.Button = elevio.BT_HallUp
+
+	}
+	if e.Floor == 0 {
+		buttonToclear.Floor = e.Floor
+		buttonToclear.Button = elevio.BT_HallUp
+	} else if e.Floor == 3 {
+		buttonToclear.Floor = e.Floor
+		buttonToclear.Button = elevio.BT_HallDown
 	}
 	fmt.Println("buttonToclear is:", buttonToclear)
 	return buttonToclear

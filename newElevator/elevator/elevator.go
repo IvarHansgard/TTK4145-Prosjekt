@@ -15,7 +15,7 @@ const (
 
 type Elevator struct {
 	Id       int
-	Floor    int
+	Floor    int 
 	Dirn     elevio.MotorDirection
 	Requests [4][3]bool
 	//hallRequests [4][2]bool
@@ -25,7 +25,7 @@ type Elevator struct {
 func Elevator_init(id int) Elevator {
 	return Elevator{
 		Id:        id,
-		Floor:     -1,
+		Floor:     0,
 		Dirn:      elevio.MD_Stop,
 		Behaviour: EB_Idle,
 	}
