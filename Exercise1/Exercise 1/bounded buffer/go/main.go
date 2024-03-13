@@ -37,3 +37,4 @@ func main() {
 
 	select {}
 }
+//hei jeg heter ulrikke
