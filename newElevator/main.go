@@ -102,8 +102,6 @@ func main() {
 				}
 			}
 			go checkMaster(chMasterState, id, activeWatchdogs)
-			//assign lost elevators orders to other elevators
-
 		}
 	}
 }

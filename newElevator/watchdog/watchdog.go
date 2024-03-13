@@ -58,6 +58,7 @@ func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan [3]bool, t
 				prevTemp = temp
 			}
 		}
+		time.Sleep(1 * time.Second)
 	}
 }
 
@@ -65,6 +66,6 @@ func WatchdogSendAlive(id int, watchdogTx chan int) {
 	fmt.Println("Starting watchdog send alive")
 	for {
 		watchdogTx <- id
-		time.Sleep(1 * time.Second)
+		time.Sleep(50 * time.Microsecond)
 	}
 }

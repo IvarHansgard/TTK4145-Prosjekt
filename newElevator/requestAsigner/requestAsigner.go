@@ -183,6 +183,11 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 		}*/
 		case temp := <-chMasterState:
 			masterState = temp
+			if masterState {
+				//assign lost elevators orders to other elevators
+				go setIsNewHallRequest(isNewHallRequest, true)
+			}
+
 		case clearedHallRequest := <-chClearedHallRequests:
 			HallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
 
