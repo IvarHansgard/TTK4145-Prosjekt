@@ -5,12 +5,11 @@ import (
 	"time"
 )
 
-func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan [3]bool, timeout int) {
+func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan [3]bool) {
 	fmt.Println("Starting watchdog check alive")
-
-	elevator0Timer := time.NewTimer(time.Duration(timeout) * time.Second)
-	elevator1Timer := time.NewTimer(time.Duration(timeout) * time.Second)
-	elevator2Timer := time.NewTimer(time.Duration(timeout) * time.Second)
+	elevator0Timer := time.NewTimer(5 * time.Second ) 
+	elevator1Timer := time.NewTimer(5 * time.Second )
+	elevator2Timer := time.NewTimer(5 * time.Second )
 
 	for {
 		select {
@@ -29,20 +28,31 @@ func WatchdogCheckAlive(elevatorSignal chan int, activeWatchdogs chan [3]bool, t
 		case id := <-elevatorSignal:
 			switch id {
 			case 0:
-				elevator0Timer.Reset(time.Duration(timeout) * time.Second)
+				temp := <-activeWatchdogs
+				temp[0] = true
+				activeWatchdogs <- temp
+				elevator0Timer.Reset(5 * time.Second)
 			case 1:
-				elevator1Timer.Reset(time.Duration(timeout) * time.Second)
+				temp := <-activeWatchdogs
+				temp[1] = true
+				activeWatchdogs <- temp
+				elevator1Timer.Reset(5 * time.Second)
 			case 2:
-				elevator2Timer.Reset(time.Duration(timeout) * time.Second)
+				temp := <-activeWatchdogs
+				temp[2] = true
+				activeWatchdogs <- temp
+				elevator2Timer.Reset(5 * time.Second)
 			}
-		}
+		}		
 	}
 }
 
 func WatchdogSendAlive(id int, watchdogTx chan int) {
 	fmt.Println("Starting watchdog send alive")
-	for {
+	sendAliveTimer := time.NewTimer(1 * time.Millisecond)
+	select {
+	case <-sendAliveTimer.C:
 		watchdogTx <- id
-		time.Sleep(50 * time.Millisecond)
+		sendAliveTimer.Reset(1 * time.Millisecond)
 	}
 }

@@ -295,6 +295,7 @@ func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 				e.Behaviour = elevator.EB_DoorOpen
 
 			}
+
 		}
 	}
 	//nå sender vi ikke to buttons til buttonToClear, skal vi ha en ekstra if som sier at dersom det verken er RequestAbove eller RequestBelow,
@@ -310,6 +311,7 @@ func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 	return buttonToclear
 
 }
+
 
 /*
 Elevator RequestsClearAtCurrentFloor(Elevator e){

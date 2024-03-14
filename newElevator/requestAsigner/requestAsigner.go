@@ -26,7 +26,22 @@ type HRAInput struct {
 	HallRequests [4][2]bool              `json:"hallRequests"`
 	States       map[string]HRAElevState `json:"states"`
 }
+/*
+	func compareHallRequests(oldHallRequests, newHallRequests [][2]bool) [][2]bool {
+		fmt.Println("Comparing hall requests")
+		fmt.Println("Old hall requests:", oldHallRequests)
+		fmt.Println("New hall requests:", newHallRequests)
 
+		for i := 0; i < len(newHallRequests); i++ {
+			for j := 0; j < 2; j++ {
+				if newHallRequests[i][j] != oldHallRequests[i][j] {
+					oldHallRequests[i][j] = newHallRequests[i][j]
+				}
+			}
+		}
+		return oldHallRequests
+	}
+*/
 func elevatorToHRAElevState(e elevator.Elevator) HRAElevState {
 	var hra HRAElevState
 	//fmt.Println("Converting elevator to HRAElevState:", e)
@@ -76,28 +91,12 @@ func elevatorsToHRAInput(hallRequest [4][2]bool, elevatorArray []elevator.Elevat
 	return input
 }
 
-/*
-	func compareHallRequests(oldHallRequests, newHallRequests [][2]bool) [][2]bool {
-		fmt.Println("Comparing hall requests")
-		fmt.Println("Old hall requests:", oldHallRequests)
-		fmt.Println("New hall requests:", newHallRequests)
 
-		for i := 0; i < len(newHallRequests); i++ {
-			for j := 0; j < 2; j++ {
-				if newHallRequests[i][j] != oldHallRequests[i][j] {
-					oldHallRequests[i][j] = newHallRequests[i][j]
-				}
-			}
-		}
-		return oldHallRequests
-	}
-*/
 func checkifNewHallRequest(choldHallRequests chan [4][2]bool, oldHallRequests, newHallRequests [4][2]bool) {
 
 	fmt.Println("checking if new hall request")
-	fmt.Println("new requests:", newHallRequests)
-	fmt.Println("old requests:", oldHallRequests)
-
+	//fmt.Println("new requests:", newHallRequests)
+	//fmt.Println("old requests:", oldHallRequests}
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 2; j++ {
 			if !oldHallRequests[i][j] == newHallRequests[i][j] {
@@ -167,7 +166,7 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 	isNewHallRequest := make(chan bool)
 
 	var elevatorStates []elevator.Elevator
-	var masterState bool
+	var masterState bool = true
 
 	for {
 		select {
@@ -182,11 +181,14 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 			}
 		}*/
 		case temp := <-chMasterState:
-			masterState = temp
-			if masterState {
-				//assign lost elevators orders to other elevators
-				go setIsNewHallRequest(isNewHallRequest, true)
+			if temp != masterState {
+				masterState = temp
+				if masterState {
+					//assign lost elevators orders to other elevators
+					go setIsNewHallRequest(isNewHallRequest, true)
+				}
 			}
+			
 
 		case clearedHallRequest := <-chClearedHallRequests:
 			HallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
@@ -250,9 +252,9 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 					}
 
 					hallRequestsTx <- *output
-					fmt.Println("Hall requests assigned: ", *output)
-					fmt.Println("old", oldHallRequests)
-					fmt.Println("new", HallRequests)
+					//fmt.Println("Hall requests assigned: ", *output)
+					//fmt.Println("old", oldHallRequests)
+					//fmt.Println("new", HallRequests)
 				}
 			}
 			//asign requests to elevators
