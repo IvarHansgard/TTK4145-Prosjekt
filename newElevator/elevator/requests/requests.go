@@ -73,15 +73,11 @@ func RequestsHere(e Elevator) bool {
 
 /*
 // i C:
-static int RequestsHere(Elevator e){
-    for(int btn = 0; btn < N_BUTTONS; btn++){
-        if(e.requests[e.floor][btn]){
-            return 1;
-        }
-    }
-    return 0;
-}*/
 
+	static int RequestsHere(Elevator e){
+	    for(int btn = 0; btn < N_BUTTONS; btn++){
+	        if(e.requests[e.floor][btn]){e.Requests[e.Floor][elevio.BT_HallDown] = false
+*/
 func RequestsChooseDirection(e Elevator) DirnBehaviourPair {
 	switch e.Dirn {
 	case elevio.MD_Up:
@@ -269,7 +265,9 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 }
 
 func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
+	//chDoubleButtonEvent chan bool må evt. legges til i definisjon
 	var buttonToclear elevio.ButtonEvent
+
 	switch e.Dirn {
 	case elevio.MD_Down:
 		buttonToclear.Floor = e.Floor
@@ -283,9 +281,8 @@ func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 			buttonToclear.Button = elevio.BT_HallUp
 		} else if e.Requests[e.Floor][elevio.BT_HallDown] && !e.Requests[e.Floor][elevio.BT_HallUp] {
 			buttonToclear.Button = elevio.BT_HallDown
-		}
-
-		if e.Requests[e.Floor][elevio.BT_HallUp] && e.Requests[e.Floor][elevio.BT_HallDown] {
+		} else if e.Requests[e.Floor][elevio.BT_HallUp] && e.Requests[e.Floor][elevio.BT_HallDown] {
+			fmt.Println("inne i case begge")
 			if !RequestsBelow(e) {
 				buttonToclear.Button = elevio.BT_HallDown
 				e.Behaviour = elevator.EB_DoorOpen
@@ -293,7 +290,9 @@ func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 			} else if !RequestsAbove(e) {
 				buttonToclear.Button = elevio.BT_HallUp
 				e.Behaviour = elevator.EB_DoorOpen
-
+				//chDoubleButtonEvent <- true
+				//tanken bak dette var at dersom vi har to knapper som må cleares, siden det er to besitllinger og null requests above eller below,
+				//så må vi også sende button to clear for det nederse, men denne funskjone sender kun ut en buttontoclear
 			}
 		}
 	}
