@@ -116,7 +116,7 @@ func localElevatorInit(id, port int) elevator.Elevator {
 	return elevator
 }
 
-func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx chan elevator.Elevator,
+func RunLocalElevator(elevatorTx chan elevator.Elevator,
 	newHallRequest chan elevio.ButtonEvent, assignedHallRequestsRx chan requestAsigner.HallRequests, chClearedHallRequests chan elevio.ButtonEvent, id, port int) {
 	fmt.Println("Starting localElevator")
 
@@ -209,7 +209,6 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 			default:
 				break
 			}
-
 		case HallRequests := <-assignedHallRequestsRx:
 			switch id {
 
@@ -267,7 +266,7 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 				if requests.RequestsShouldClearImmediately(localElevator, button.Floor, button.Button) {
 					fmt.Println("Should clear immediately")
 					doorTimeoutSignal.Reset(3 * time.Second)
-					localElevator.Behaviour= elevator.EB_DoorOpen
+					localElevator.Behaviour = elevator.EB_DoorOpen
 					elevatorTx <- localElevator
 
 				} else {
@@ -363,7 +362,6 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 					//fmt.Println("clearing request: ", buttonevent)
 					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
 
-					
 					fmt.Println("dirn is: ", localElevator.Dirn)
 				}
 

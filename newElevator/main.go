@@ -44,8 +44,8 @@ func main() {
 
 	elevatorTx := make(chan elevator.Elevator)
 	elevatorRx := make(chan elevator.Elevator)
-	activeElevators := make([]elevator.Elevator, 3)
-	chActiveElevators := make(chan []elevator.Elevator)
+	elevatorStatuses := make([]elevator.Elevator, 3)
+	chElevatorStatuses := make(chan []elevator.Elevator)
 
 	assignedHallRequestsTx := make(chan requestAsigner.HallRequests)
 	assignedHallRequestsRx := make(chan requestAsigner.HallRequests)
@@ -54,8 +54,8 @@ func main() {
 	chNewHallRequestTx := make(chan elevio.ButtonEvent)
 	chNewHallRequestRx := make(chan elevio.ButtonEvent)
 
-	watchdogTx := make(chan int)
-	watchdogRx := make(chan int)
+	chWatchdogTx := make(chan int)
+	chWatchdogRx := make(chan int)
 	chActiveWatchdogs := make(chan [3]bool)
 
 	fmt.Println("Starting broadcast of, elevator, hallRequest and watchdog")
@@ -74,30 +74,30 @@ func main() {
 	go bcast.Receiver(3003, chHallRequestClearedRx)
 
 	//transmitter and receiver for watchdog
-	go bcast.Transmitter(4001, watchdogTx)
-	go bcast.Receiver(4001, watchdogRx)
+	go bcast.Transmitter(4001, chWatchdogTx)
+	go bcast.Receiver(4001, chWatchdogRx)
 
 	//functions for checking the watchdog and sending alive signal
-	go watchdog.WatchdogSendAlive(id, watchdogTx)
-	go watchdog.WatchdogCheckAlive(watchdogRx, chActiveWatchdogs, 10)
+	go watchdog.WatchdogSendAlive(id, chWatchdogTx)
+	go watchdog.WatchdogCheckAlive(chWatchdogRx, chActiveWatchdogs, 10)
 
 	//functions for running the local elevator
-	go runElevator.RunLocalElevator(chActiveElevators, elevatorTx, chNewHallRequestTx, assignedHallRequestsRx, chHallRequestClearedTx, id, port)
+	go runElevator.RunLocalElevator(elevatorTx, chNewHallRequestTx, assignedHallRequestsRx, chHallRequestClearedTx, id, port)
 
 	//function for assigning hall request to slave elevators
-	go requestAsigner.RequestAsigner(chNewHallRequestRx, chActiveElevators, chMasterState, chHallRequestClearedRx, assignedHallRequestsTx) //jobbe med den her
+	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chMasterState, chHallRequestClearedRx, assignedHallRequestsTx) //jobbe med den her
 
 	fmt.Println("Starting main loop")
 	for {
 		select {
 		case elevator := <-elevatorRx:
-			activeElevators[elevator.Id] = elevator
-			chActiveElevators <- activeElevators
+			elevatorStatuses[elevator.Id] = elevator
+			chElevatorStatuses <- elevatorStatuses
 
 		case activeWatchdogs := <-chActiveWatchdogs:
 			for i := 0; i < 3; i++ {
 				if !activeWatchdogs[i] {
-					activeElevators[i].Behaviour = elevator.EB_Disconnected
+					elevatorStatuses[i].Behaviour = elevator.EB_Disconnected
 				}
 			}
 			go checkMaster(chMasterState, id, activeWatchdogs)
