@@ -5,7 +5,7 @@ import (
 	"elevatorlib/elevator/requests"
 	"elevatorlib/elevio"
 	"elevatorlib/requestAsigner"
-	"fmt" 
+	"fmt"
 	"time"
 )
 
@@ -172,7 +172,7 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 				localElevator.Dirn = pair.Dirn
 				localElevator.Behaviour = pair.Behaviour
 				//elevio.SetDoorOpenLamp(false)
-				
+
 				fmt.Println(localElevator)
 				elevatorTx <- localElevator
 
@@ -208,7 +208,7 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 			default:
 				break
 			}
-			elevatorTx<-localElevator
+			elevatorTx <- localElevator
 		case HallRequests := <-assignedHallRequestsRx:
 			switch id {
 
@@ -342,8 +342,12 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 					elevio.SetDoorOpenLamp(true)
 
 					if localElevator.Requests[localElevator.Floor][0] && localElevator.Requests[localElevator.Floor][1] {
-						localElevator.Requests[localElevator.Floor][localElevator.Dirn] = false
 						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator) //flyttet fra 360
+						if localElevator.Dirn == elevio.MD_Up {
+							localElevator.Requests[localElevator.Floor][0] = false
+						} else if localElevator.Dirn == elevio.MD_Down {
+							localElevator.Requests[localElevator.Floor][1] = false
+						}
 						fmt.Println("Door open")
 						doorTimeoutSignal.Reset(3 * time.Second)
 					} else if localElevator.Requests[localElevator.Floor][0] || localElevator.Requests[localElevator.Floor][1] {
@@ -366,7 +370,6 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 
 					fmt.Println("dirn is: ", localElevator.Dirn)
 				}
-				break
 			case elevator.EB_Idle:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 3; j++ {
