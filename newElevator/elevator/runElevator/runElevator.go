@@ -5,7 +5,7 @@ import (
 	"elevatorlib/elevator/requests"
 	"elevatorlib/elevio"
 	"elevatorlib/requestAsigner"
-	"fmt"
+	"fmt" 
 	"time"
 )
 
@@ -172,7 +172,7 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 				localElevator.Dirn = pair.Dirn
 				localElevator.Behaviour = pair.Behaviour
 				//elevio.SetDoorOpenLamp(false)
-
+				
 				fmt.Println(localElevator)
 				elevatorTx <- localElevator
 
@@ -208,8 +208,7 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 			default:
 				break
 			}
-			elevatorTx <- localElevator
-
+			elevatorTx<-localElevator
 		case HallRequests := <-assignedHallRequestsRx:
 			switch id {
 

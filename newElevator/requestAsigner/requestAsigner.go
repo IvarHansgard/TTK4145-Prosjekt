@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 )
-
+ 
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
 // This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
 
@@ -224,7 +224,7 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 					case "linux":
 						hraExecutable = "hall_request_assigner"
 					case "windows":
-						hraExecutable = "hall_request_assigner.exe"
+						hraExecutable = "./requestAsigner/hall_request_assigner.exe"
 					default:
 						panic("OS not supported")
 					}
