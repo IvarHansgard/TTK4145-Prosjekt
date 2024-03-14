@@ -342,13 +342,21 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 					elevio.SetDoorOpenLamp(true)
 
 					if localElevator.Requests[localElevator.Floor][0] && localElevator.Requests[localElevator.Floor][1] {
+						localElevator.Requests[localElevator.Floor][localElevator.Dirn] = false
 						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator) //flyttet fra 360
 						if localElevator.Dirn == elevio.MD_Up {
 							localElevator.Requests[localElevator.Floor][0] = false
 						} else if localElevator.Dirn == elevio.MD_Down {
 							localElevator.Requests[localElevator.Floor][1] = false
 						}
+						if localElevator.Dirn == elevio.MD_Up {
+							localElevator.Requests[localElevator.Floor][0] = false
+						} else if localElevator.Dirn == elevio.MD_Down {
+							localElevator.Requests[localElevator.Floor][1] = false
+						}
 						fmt.Println("Door open")
+						fmt.Println(localElevator)
+						localElevator.Behaviour = elevator.EB_DoorOpen
 						doorTimeoutSignal.Reset(3 * time.Second)
 					} else if localElevator.Requests[localElevator.Floor][0] || localElevator.Requests[localElevator.Floor][1] {
 						localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
@@ -370,6 +378,7 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 
 					fmt.Println("dirn is: ", localElevator.Dirn)
 				}
+				break
 			case elevator.EB_Idle:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 3; j++ {
