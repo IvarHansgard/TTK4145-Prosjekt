@@ -224,7 +224,7 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 					case "linux":
 						hraExecutable = "hall_request_assigner"
 					case "windows":
-						hraExecutable = "hall_request_assigner.exe"
+						hraExecutable = "./requestAsigner/hall_request_assigner.exe"
 					default:
 						panic("OS not supported")
 					}
