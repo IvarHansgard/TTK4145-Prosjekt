@@ -125,7 +125,7 @@ func RequestsChooseDirection(e Elevator) DirnBehaviourPair {
 			fmt.Println("md stop, requests below")
 			return DirnBehaviourPair{elevio.MD_Down, EB_Moving}
 		} else {
-			fmt.Println("md stop, idle")
+			fmt.Println("md stop, idle", e.Requests)
 			return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
 		}
 
@@ -193,7 +193,7 @@ int RequestsShouldStop(Elevator e){
 }*/
 
 func RequestsShouldClearImmediately(e Elevator, btn_floor int, btn_type elevio.ButtonType) bool {
-	return e.Floor == btn_floor && (e.Dirn == elevio.MD_Up && btn_type == elevio.BT_HallUp) || (e.Dirn == elevio.MD_Down && btn_type == elevio.BT_HallDown) || e.Dirn == elevio.MD_Stop || btn_type == elevio.BT_Cab
+	return e.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevio.BT_HallUp) || (e.Dirn == elevio.MD_Down && btn_type == elevio.BT_HallDown) || (e.Dirn == elevio.MD_Stop || btn_type == elevio.BT_Cab))
 }
 
 //i C
@@ -232,22 +232,28 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 	e.Requests[e.Floor][elevio.BT_Cab] = false
 	switch e.Dirn {
 	case elevio.MD_Up:
-		if !RequestsAbove(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
+		// if !RequestsAbove(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
+		// 	e.Requests[e.Floor][elevio.BT_HallDown] = false
+		// }
+		// /*
+		// 	if RequestsAbove(e) && e.Requests[e.Floor][elevio.BT_HallUp] && e.Requests[e.Floor][elevio.BT_HallDown] && !RequestsBelow(e){
+		// 		e.Requests[e.Floor][elevio.BT_HallDown]=false
+		// 		e.Behaviour=elevator.EB_DoorOpen
+
+		// 	}*/
+		// e.Requests[e.Floor][elevio.BT_HallUp] = false
+		e.Requests[e.Floor][elevio.BT_HallUp] = false
+		if !RequestsAbove(e) {
 			e.Requests[e.Floor][elevio.BT_HallDown] = false
 		}
-		/*
-			if RequestsAbove(e) && e.Requests[e.Floor][elevio.BT_HallUp] && e.Requests[e.Floor][elevio.BT_HallDown] && !RequestsBelow(e){
-				e.Requests[e.Floor][elevio.BT_HallDown]=false
-				e.Behaviour=elevator.EB_DoorOpen
-
-
-			}*/
-		e.Requests[e.Floor][elevio.BT_HallUp] = false
 	case elevio.MD_Down:
-		if !RequestsBelow(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
+		// if !RequestsBelow(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
+		// 	e.Requests[e.Floor][elevio.BT_HallUp] = false
+		// }
+		e.Requests[e.Floor][elevio.BT_HallDown] = false
+		if !RequestsBelow(e) {
 			e.Requests[e.Floor][elevio.BT_HallUp] = false
 		}
-		e.Requests[e.Floor][elevio.BT_HallDown] = false
 	case elevio.MD_Stop:
 		fallthrough
 	default:
@@ -264,7 +270,6 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 
 func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 	var buttonToclear elevio.ButtonEvent
-
 	switch e.Dirn {
 	case elevio.MD_Down:
 		buttonToclear.Floor = e.Floor
@@ -272,8 +277,28 @@ func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 	case elevio.MD_Up:
 		buttonToclear.Floor = e.Floor
 		buttonToclear.Button = elevio.BT_HallUp
+	case elevio.MD_Stop:
+		buttonToclear.Floor = e.Floor
+		if e.Requests[e.Floor][elevio.BT_HallUp] && !e.Requests[e.Floor][elevio.BT_HallDown] {
+			buttonToclear.Button = elevio.BT_HallUp
+		} else if e.Requests[e.Floor][elevio.BT_HallDown] && !e.Requests[e.Floor][elevio.BT_HallUp] {
+			buttonToclear.Button = elevio.BT_HallDown
+		}
 
+		if e.Requests[e.Floor][elevio.BT_HallUp] && e.Requests[e.Floor][elevio.BT_HallDown] {
+			if !RequestsBelow(e) {
+				buttonToclear.Button = elevio.BT_HallDown
+				e.Behaviour = elevator.EB_DoorOpen
+
+			} else if !RequestsAbove(e) {
+				buttonToclear.Button = elevio.BT_HallUp
+				e.Behaviour = elevator.EB_DoorOpen
+
+			}
+		}
 	}
+	//nå sender vi ikke to buttons til buttonToClear, skal vi ha en ekstra if som sier at dersom det verken er RequestAbove eller RequestBelow,
+	//skal vi ha en ekstra if som sier at begge to må cleares
 	if e.Floor == 0 {
 		buttonToclear.Floor = e.Floor
 		buttonToclear.Button = elevio.BT_HallUp
@@ -283,6 +308,7 @@ func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 	}
 	fmt.Println("buttonToclear is:", buttonToclear)
 	return buttonToclear
+
 }
 
 /*

@@ -162,7 +162,7 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 			}
 
 			fmt.Println("Door timed out")
-
+			setAllLights(localElevator)
 			switch localElevator.Behaviour {
 			case elevator.EB_DoorOpen:
 				localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
@@ -267,6 +267,7 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 				if requests.RequestsShouldClearImmediately(localElevator, button.Floor, button.Button) {
 					fmt.Println("Should clear immediately")
 					doorTimeoutSignal.Reset(3 * time.Second)
+					localElevator.Behaviour= elevator.EB_DoorOpen
 					elevatorTx <- localElevator
 
 				} else {
@@ -282,6 +283,7 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 
 			case elevator.EB_Moving:
 				fmt.Println("Elevator is moving.")
+				//elevio.SetMotorDirection(localElevator.Dirn)
 				if button.Button == elevio.BT_HallDown || button.Button == elevio.BT_HallUp {
 					newHallRequest <- button
 				} else {
@@ -329,6 +331,7 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 
 		case floor := <-chFloor:
 			localElevator.Floor = floor
+
 			fmt.Println("elevator is on floor: ", floor)
 			elevio.SetFloorIndicator(localElevator.Floor)
 			elevatorTx <- localElevator
@@ -341,13 +344,15 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 					elevio.SetDoorOpenLamp(true)
 					fmt.Println("Door open")
 					fmt.Println("Door open timer started")
+					setAllLights(localElevator)
 					doorTimeoutSignal.Reset(3 * time.Second)
 					localElevator.Behaviour = elevator.EB_DoorOpen
 					localElevator.Dirn = elevio.MD_Stop
 
 					if localElevator.Requests[localElevator.Floor][0] || localElevator.Requests[localElevator.Floor][1] {
 						localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
-						
+						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator) //flyttet fra 360
+
 					} else {
 						localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 					}
@@ -356,9 +361,9 @@ func RunLocalElevator(chActiveElevators chan []elevator.Elevator, elevatorTx cha
 					elevatorTx <- localElevator
 					//buttonevent := requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
 					//fmt.Println("clearing request: ", buttonevent)
-					chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
 
-					setAllLights(localElevator)
+					
 					fmt.Println("dirn is: ", localElevator.Dirn)
 				}
 
