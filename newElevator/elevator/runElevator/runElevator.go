@@ -341,15 +341,22 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 				if requests.RequestsShouldStop(localElevator) {
 					elevio.SetMotorDirection(elevio.MD_Stop)
 					elevio.SetDoorOpenLamp(true)
-					if localElevator.Requests[localElevator.Floor][0] || localElevator.Requests[localElevator.Floor][1] {
+
+					if localElevator.Requests[localElevator.Floor][0] && localElevator.Requests[localElevator.Floor][1] {
+						localElevator.Requests[localElevator.Floor][localElevator.Dirn] = false
+						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator) //flyttet fra 360
+						fmt.Println("Door open")
+						doorTimeoutSignal.Reset(3 * time.Second)
+					} else if localElevator.Requests[localElevator.Floor][0] || localElevator.Requests[localElevator.Floor][1] {
 						localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator) //flyttet fra 360
-
+						fmt.Println("Door open")
+						doorTimeoutSignal.Reset(3 * time.Second)
 					} else {
 						localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
+						fmt.Println("Door open")
+						doorTimeoutSignal.Reset(3 * time.Second)
 					}
-					fmt.Println("Door open")
-					doorTimeoutSignal.Reset(3 * time.Second)
 					setAllLights(localElevator)
 					localElevator.Behaviour = elevator.EB_DoorOpen
 					//requests.RequestsClearAtCurrentFloor(localElevator)
