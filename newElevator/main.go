@@ -57,11 +57,6 @@ func main() {
 	chWatchdogTx := make(chan int)
 	chWatchdogRx := make(chan int)
 	chActiveWatchdogs := make(chan [3]bool)
-	if id == 0 {
-		chActiveWatchdogs <- [3]bool{true, false, false}
-	} else {
-		chActiveWatchdogs <- [3]bool{false, false, false}
-	}
 
 	fmt.Println("Starting broadcast of, elevator, hallRequest and watchdog")
 	//transmitter and receiver for elevator states
@@ -91,6 +86,12 @@ func main() {
 
 	//function for assigning hall request to slave elevators
 	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chMasterState, chHallRequestClearedRx, assignedHallRequestsTx) //jobbe med den her
+
+	if id == 0 {
+		chActiveWatchdogs <- [3]bool{true, false, false}
+	} else {
+		chActiveWatchdogs <- [3]bool{false, false, false}
+	}
 
 	fmt.Println("Starting main loop")
 	for {
