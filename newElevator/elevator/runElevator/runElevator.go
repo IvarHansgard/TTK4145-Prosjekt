@@ -183,7 +183,6 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator,
 					if localElevator.Requests[localElevator.Floor][0] || localElevator.Requests[localElevator.Floor][1] {
 						localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-
 					} else {
 						localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 					}
