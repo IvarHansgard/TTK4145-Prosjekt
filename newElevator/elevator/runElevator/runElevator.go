@@ -171,11 +171,11 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 					doorTimeoutSignal.Reset(3 * time.Second)
 					//kanskje cleare dobelt her
 					//if localElevator.Requests[localElevator.Floor][0] {
-						//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						//localElevator.Dirn = elevio.MD_Up
-						//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						//localElevator.Dirn = pair.Dirn
-						//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
+					//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = elevio.MD_Up
+					//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = pair.Dirn
+					//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
 					//localElevator.Dirn = elevio.MD_Up
 					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
@@ -185,10 +185,10 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 					//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 					//}
 					//if localElevator.Requests[localElevator.Floor][1] {
-						//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						//localElevator.Dirn = elevio.MD_Down
-						//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						//localElevator.Dirn = pair.Dirn
+					//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = elevio.MD_Down
+					//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = pair.Dirn
 					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
 					//localElevator.Dirn = elevio.MD_Down
 					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
@@ -247,12 +247,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 			case 1:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
-<<<<<<< HEAD
-						localElevator.Requests[i][j] = hallRequests["two"][i][j]
-
-=======
 						localElevator.Requests[i][j] = HallRequests["two"][i][j]
->>>>>>> 3296aec (ivar)
 					}
 				}
 				fmt.Println("Assigned hall requests: ", hallRequests["two"])
@@ -272,12 +267,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 			case 2:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
-<<<<<<< HEAD
-						localElevator.Requests[i][j] = hallRequests["three"][i][j]
-
-=======
 						localElevator.Requests[i][j] = HallRequests["three"][i][j]
->>>>>>> 3296aec (ivar)
 					}
 				}
 				fmt.Println("Assigned hall requests: ", hallRequests["three"])
@@ -365,7 +355,6 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 			}
 			setAllLights(localElevator)
 			chElevatorTx <- localElevator
-
 
 		case floor := <-chFloor:
 			localElevator.Floor = floor
