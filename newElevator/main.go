@@ -5,38 +5,63 @@ import (
 	"elevatorlib/elevator/runElevator"
 	"elevatorlib/elevio"
 	"elevatorlib/network/bcast"
+	"elevatorlib/network/peers"
 	"elevatorlib/requestAsigner"
-	"elevatorlib/watchdog"
 	"flag"
 	"fmt"
+	"sort"
 )
 
-func checkMaster(chMasterState chan bool, id int, activeElevators [3]bool) {
-	fmt.Println("activeElevators changed checking master")
-	if id != 0 {
-		if activeElevators[id-1] || activeElevators[0] {
-			fmt.Println("Elevator:", id, "is slave")
-			chMasterState <- false
-		} else {
-			fmt.Println("Elevator:", id, "is master")
-			fmt.Println("activeElevators", activeElevators)
-			chMasterState <- true
+/*
+	func checkMaster(chMasterState chan bool, id int, chActiveWatchdogs chan [3]bool) {
+		fmt.Println("activeElevators changed checking master")
+		oldMasterState := false
+		newMasterState := oldMasterState
+		for {
+			select {
+			case temp := <-chMasterState:
+				oldMasterState = temp
+			case activeElevators := <-chActiveWatchdogs:
+				if id != 0 {
+					if activeElevators[id-1] || activeElevators[0] {
+						fmt.Println("Elevator:", id, "is slave")
+						newMasterState = false
+						fmt.Println("activeElevators", activeElevators)
+					} else {
+						fmt.Println("Elevator:", id, "is master")
+						fmt.Println("activeElevators", activeElevators)
+						newMasterState = true
+					}
+				} else {
+					fmt.Println("Elevator:", id, "is master")
+					fmt.Println("activeElevators", activeElevators)
+					newMasterState = true
+				}
+				if oldMasterState != newMasterState {
+					chMasterState <- newMasterState
+					oldMasterState = newMasterState
+				}
+			default:
+				fmt.Print(oldMasterState)
+				chMasterState <- oldMasterState
+			}
+
 		}
-	} else {
-		fmt.Println("Elevator:", id, "is master")
-		fmt.Println("activeElevators", activeElevators)
-		chMasterState <- true
 	}
-	return
+*/
+
+func chooseMaster(peers []string) string {
+	sort.Strings(peers)
+	return peers[0]
 }
 
 type hallRequests map[string][][2]int
 
 func main() {
 	fmt.Println("Starting main")
-	id := 0
+	id := "0"
 	port := 15657
-	flag.IntVar(&id, "id", 0, "id of this elevator")
+	flag.StringVar(&id, "id", "0", "id of this elevator")
 	flag.IntVar(&port, "port", 15657, "port of this elevator")
 	flag.Parse()
 
@@ -57,15 +82,18 @@ func main() {
 	//used for sending new hall requests from elevators to request assigner
 	chNewHallRequestTx := make(chan elevio.ButtonEvent)
 	chNewHallRequestRx := make(chan elevio.ButtonEvent)
-	//used to send information about cleared hall requests from elevators to request assigner 
+	//used to send information about cleared hall requests from elevators to request assigner
 	chHallRequestClearedTx := make(chan elevio.ButtonEvent)
 	chHallRequestClearedRx := make(chan elevio.ButtonEvent)
 
+	chPeerEnable := make(chan bool)
+	chPeerRxTx := make(chan peers.PeerUpdate)
+
 	//used for sending elevator alive signal to watchdog
-	chWatchdogTx := make(chan int)
-	chWatchdogRx := make(chan int)
-	activeWatchdogs := [3]bool{false, false, false}
-	chActiveWatchdogs := make(chan [3]bool)
+	//chWatchdogTx := make(chan int)
+	//chWatchdogRx := make(chan int)
+	//activeWatchdogs := [3]bool{false, false, false}
+	//chActiveWatchdogs := make(chan [3]bool)
 
 	//used for updating the active watchdogs array (checking which elevators are still alive)
 	fmt.Println("Starting broadcast of, elevator, hallRequest and watchdog")
@@ -82,22 +110,23 @@ func main() {
 	go bcast.Transmitter(3003, chHallRequestClearedTx)
 	go bcast.Receiver(3003, chHallRequestClearedRx)
 	//transmitter and receiver for watchdog
-	go bcast.Transmitter(4001, chWatchdogTx)
-	go bcast.Receiver(4001, chWatchdogRx)
-
+	//go bcast.Transmitter(4001, chWatchdogTx)
+	//go bcast.Receiver(4001, chWatchdogRx)
+	go peers.Transmitter(4001, id, chPeerEnable)
+	go peers.Receiver(4001, chPeerRxTx)
 	//functions for checking the watchdog and sending alive signal
-	go watchdog.WatchdogSendAlive(id, chWatchdogTx)
-	go watchdog.WatchdogCheckAlive(chWatchdogRx, chActiveWatchdogs)
+	//go watchdog.WatchdogSendAlive(id, chWatchdogTx)
+	//go watchdog.WatchdogCheckAlive(chWatchdogRx, chActiveWatchdogs)
 
 	//functions for running the local elevator
 	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port)
 
 	//function for assigning hall request to slave elevators
 	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her
-	
-	activeWatchdogs[id] = true
-	chActiveWatchdogs <- activeWatchdogs
-	
+
+	fmt.Println("Starting peer")
+	chPeerEnable <- true
+
 	fmt.Println("Starting main loop")
 	for {
 		select {
@@ -105,14 +134,20 @@ func main() {
 			elevatorStatuses[elevator.Id] = elevator
 			chElevatorStatuses <- elevatorStatuses
 
-		case temp := <-chActiveWatchdogs:
-			for i := 0; i < 3; i++ {
-				if !temp[i] {
-					elevatorStatuses[i].Behaviour = elevator.EB_Disconnected
+		//case  <-chActiveWatchdogs:
+		case pUpdate := <-chPeerRxTx:
+			fmt.Println("Peers updated", pUpdate)
+			if len(pUpdate.Peers) > 0 {
+				masterID := chooseMaster(pUpdate.Peers)
+				if id == masterID {
+					fmt.Println("i am master")
+					chMasterState <- true
+				} else {
+					fmt.Println("i am slave")
+					chMasterState <- false
 				}
 			}
-			activeWatchdogs = temp
-			go checkMaster(chMasterState, id, activeWatchdogs)
 		}
+
 	}
 }

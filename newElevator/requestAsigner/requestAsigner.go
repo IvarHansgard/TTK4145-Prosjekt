@@ -153,7 +153,7 @@ git config --global user.email "your.email@example.com"*/
 func setIsNewHallRequest(isNewHallRequest chan bool, state bool) {
 	isNewHallRequest <- state
 	return
-}
+} 
 func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators chan []elevator.Elevator, chMasterState chan bool, chClearedHallRequests chan elevio.ButtonEvent, hallRequestsTx chan HallRequests) {
 	fmt.Println("Starting requestAsigner")
 
