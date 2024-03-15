@@ -155,7 +155,8 @@ func setRunRequestAssigner(isNewHallRequest chan bool, state bool) {
 	isNewHallRequest <- state
 }
 
-func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates chan []elevator.Elevator, chRequestAssigner chan bool, chHallRequestClearedRx chan elevio.ButtonEvent, chAssignedHallRequestsTx chan HallRequests) {
+func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates chan []elevator.Elevator, chRequestAssigner chan bool, 
+	chHallRequestClearedRx chan elevio.ButtonEvent, chAssignedHallRequestsTx chan HallRequests) {
 	fmt.Println("Starting requestAsigner")
 
 	choldHallRequests := make(chan [4][2]bool)

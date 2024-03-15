@@ -112,59 +112,60 @@ func checkMaster(chMasterState chan bool, masterState bool, id string, peerUpdat
 	}
 	return
 }
+
 /*
-func checkMaster(chMasterState chan bool, masterState bool, id string, peerUpdate peers.PeerUpdate) {
-	if len(peerUpdate.Peers) == 1 && peerUpdate.New == id {
-		fmt.Println("Start Up")
-		fmt.Println("My master state is", masterState)
-	} else if len(peerUpdate.Lost) > 0 {
-		fmt.Println("Lost peer", peerUpdate.Lost)
-		fmt.Println("checking master")
-		if peerUpdate.Peers[0] == id {
-			if !masterState {
-				fmt.Println("Changing to master")
-				chMasterState <- true
+	func checkMaster(chMasterState chan bool, masterState bool, id string, peerUpdate peers.PeerUpdate) {
+		if len(peerUpdate.Peers) == 1 && peerUpdate.New == id {
+			fmt.Println("Start Up")
+			fmt.Println("My master state is", masterState)
+		} else if len(peerUpdate.Lost) > 0 {
+			fmt.Println("Lost peer", peerUpdate.Lost)
+			fmt.Println("checking master")
+			if peerUpdate.Peers[0] == id {
+				if !masterState {
+					fmt.Println("Changing to master")
+					chMasterState <- true
+				}
+				fmt.Println("I am master")
+			} else {
+				if masterState {
+					fmt.Println("Changing to slave")
+					chMasterState <- false
+				}
+				fmt.Println("I am slave")
 			}
-			fmt.Println("I am master")
-		} else {
-			if masterState {
-				fmt.Println("Changing to slave")
-				chMasterState <- false
+		} else if peerUpdate.New != "" && peerUpdate.New != id {
+			fmt.Println("New peer", peerUpdate.New)
+			fmt.Println("checking master")
+			if peerUpdate.Peers[0] == id {
+				if !masterState {
+					fmt.Println("Changing to master")
+					chMasterState <- true
+				}
+				fmt.Println("I am master")
+			} else {
+				if masterState {
+					fmt.Println("Changing to slave")
+					chMasterState <- false
+				}
+				fmt.Println("I am slave")
 			}
-			fmt.Println("I am slave")
-		}
-	} else if peerUpdate.New != "" && peerUpdate.New != id {
-		fmt.Println("New peer", peerUpdate.New)
-		fmt.Println("checking master")
-		if peerUpdate.Peers[0] == id {
-			if !masterState {
-				fmt.Println("Changing to master")
-				chMasterState <- true
+		} else if len(peerUpdate.Peers) > 0 {
+			if peerUpdate.Peers[0] == id {
+				if !masterState {
+					fmt.Println("Changing to master")
+					chMasterState <- true
+				}
+				fmt.Println("I am master")
+			} else {
+				if masterState {
+					fmt.Println("Changing to slave")
+					chMasterState <- false
+				}
+				fmt.Println("I am slave")
 			}
-			fmt.Println("I am master")
-		} else {
-			if masterState {
-				fmt.Println("Changing to slave")
-				chMasterState <- false
-			}
-			fmt.Println("I am slave")
-		}
-	} else if len(peerUpdate.Peers) > 0 {
-		if peerUpdate.Peers[0] == id {
-			if !masterState {
-				fmt.Println("Changing to master")
-				chMasterState <- true
-			}
-			fmt.Println("I am master")
-		} else {
-			if masterState {
-				fmt.Println("Changing to slave")
-				chMasterState <- false
-			}
-			fmt.Println("I am slave")
 		}
 	}
-}
 */
 type hallRequests map[string][][2]int
 
