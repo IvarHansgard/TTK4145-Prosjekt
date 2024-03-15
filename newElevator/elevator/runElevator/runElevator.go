@@ -105,7 +105,7 @@ func localElevatorInit(id, port int) elevator.Elevator {
 }
 
 func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx chan elevio.ButtonEvent, chAssignedHallRequestsRx chan requestAsigner.HallRequests,
-	chHallRequestClearedTx chan elevio.ButtonEvent, strId string, port int) {
+	chHallRequestClearedTx chan elevio.ButtonEvent, strId string, port int, chStopButtonPressed chan bool) {
 	fmt.Println("Starting localElevator")
 	id, err := strconv.Atoi(strId)
 	if err != nil {
@@ -120,7 +120,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 	chStopButton := make(chan bool)
 
 	doorTimeoutSignal := time.NewTimer(3 * time.Second)
-	specialCase := time.NewTimer(3 * time.Second)
+	//specialCase := time.NewTimer(3 * time.Second)
 	//floorTimeoutSignal := time.NewTimer(60 * time.Second)
 
 	go elevio.PollButtons(chButtonEvent)
@@ -133,7 +133,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 		elevio.SetMotorDirection(elevio.MD_Down)
 		localElevator.Dirn = elevio.MD_Down
 		localElevator.Behaviour = elevator.EB_Moving
-		elevatorTx <- localElevator
+		chElevatorTx <- localElevator
 	}
 	for {
 		select {
@@ -440,7 +440,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 			localElevator.Behaviour = elevator.EB_Disconnected
 			elevio.SetMotorDirection(localElevator.Dirn)
 			elevio.SetDoorOpenLamp(false)
-			chelevatorTx <- localElevator
+			chElevatorTx <- localElevator
 			chStopButtonPressed <- true
 		}
 	}
