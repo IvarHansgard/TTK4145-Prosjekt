@@ -228,7 +228,7 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 				e.Requests[e.Floor][btn] = false
 			}
 	*/
-	///*case CV_InDirn:
+	///*case CV_InDirn: sara
 	e.Requests[e.Floor][elevio.BT_Cab] = false
 	switch e.Dirn {
 	case elevio.MD_Up:
