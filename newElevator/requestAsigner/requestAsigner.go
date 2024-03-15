@@ -160,7 +160,7 @@ func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates
 
 	choldHallRequests := make(chan [4][2]bool)
 
-	hallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
+	HallRequests:= [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
 	oldHallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
 
 	isNewHallRequest := make(chan bool)
@@ -440,7 +440,7 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 		case button := <-chNewHallRequest:
 			fmt.Println("Hall request recieved", button)
 			HallRequests[button.Floor][int(button.Button)] = true
-			go checkifNewHallRequest(choldHallRequests, oldHallRequests, HallRequests)
+			go checkifNewHallRequest(choldHallRequests, oldHallRequests, hallRequests)
 
 		case temp := <-choldHallRequests:
 			oldHallRequests = temp

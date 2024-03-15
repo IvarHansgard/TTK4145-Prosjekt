@@ -222,15 +222,15 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 			}
 			chElevatorTx <- localElevator
 
-		case hallRequests := <-chAssignedHallRequestsRx:
+		case HallRequests := <-chAssignedHallRequestsRx:
 			switch id {
 			case 0:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
-						localElevator.Requests[i][j] = hallRequests["one"][i][j]
+						localElevator.Requests[i][j] = HallRequests["one"][i][j]
 					}
 				}
-				fmt.Println("Assigned hall requests: ", hallRequests["one"])
+				fmt.Println("Assigned hall requests: ", HallRequests["one"])
 				dirn := requests.RequestsChooseDirection(localElevator)
 				localElevator.Dirn = dirn.Dirn
 				localElevator.Behaviour = dirn.Behaviour
@@ -250,7 +250,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 						localElevator.Requests[i][j] = HallRequests["two"][i][j]
 					}
 				}
-				fmt.Println("Assigned hall requests: ", hallRequests["two"])
+				fmt.Println("Assigned hall requests: ", HallRequests["two"])
 				dirn := requests.RequestsChooseDirection(localElevator)
 				localElevator.Dirn = dirn.Dirn
 				localElevator.Behaviour = dirn.Behaviour
@@ -270,7 +270,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 						localElevator.Requests[i][j] = HallRequests["three"][i][j]
 					}
 				}
-				fmt.Println("Assigned hall requests: ", hallRequests["three"])
+				fmt.Println("Assigned hall requests: ", HallRequests["three"])
 				dirn := requests.RequestsChooseDirection(localElevator)
 				localElevator.Dirn = dirn.Dirn
 				localElevator.Behaviour = dirn.Behaviour
@@ -440,7 +440,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 			localElevator.Behaviour = elevator.EB_Disconnected
 			elevio.SetMotorDirection(localElevator.Dirn)
 			elevio.SetDoorOpenLamp(false)
-			elevatorTx <- localElevator
+			chelevatorTx <- localElevator
 			chStopButtonPressed <- true
 		}
 	}

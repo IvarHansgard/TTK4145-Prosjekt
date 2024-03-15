@@ -66,7 +66,7 @@ import (
 		}
 	}
 */
-func assignDisconnected(id string, peerUpdate peers.PeerUpdate, elevatorStatuses []elevator.Elevator, chElevatorStates chan []elevator.Elevator, chElevatorLost chan bool) {
+func assignDisconnected(id string, peerUpdate peers.PeerUpdate, elevatorStates []elevator.Elevator, chElevatorStates chan []elevator.Elevator, chElevatorLost chan bool) {
 	if len(peerUpdate.Lost) > 0 && peerUpdate.Lost[0] != id {
 		for i := 0; i < len(peerUpdate.Lost); i++ {
 			elevId, err := strconv.Atoi(peerUpdate.Lost[i])
