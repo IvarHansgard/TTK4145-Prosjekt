@@ -243,27 +243,20 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 		// 	}*/
 		// e.Requests[e.Floor][elevio.BT_HallUp] = false
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
-		//if !RequestsAbove(e) {
-		//	e.Requests[e.Floor][elevio.BT_HallDown] = false
-		//}
+
 	case elevio.MD_Down:
 		 if !RequestsBelow(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
 		 	e.Requests[e.Floor][elevio.BT_HallUp] = false
 		 }
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
-		//if !RequestsBelow(e) {
-		//	e.Requests[e.Floor][elevio.BT_HallUp] = false
-		//}
+
 	case elevio.MD_Stop:
 		fallthrough
 	default:
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
 	}
-	/*
-		default:
-			break
-		}*/
+
 	return e
 
 }
@@ -298,8 +291,7 @@ func HallRequestsClearAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 
 		}
 	}
-	//nå sender vi ikke to buttons til buttonToClear, skal vi ha en ekstra if som sier at dersom det verken er RequestAbove eller RequestBelow,
-	//skal vi ha en ekstra if som sier at begge to må cleares
+
 	if e.Floor == 0 {
 		buttonToclear.Floor = e.Floor
 		buttonToclear.Button = elevio.BT_HallUp
@@ -312,44 +304,3 @@ func HallRequestsClearAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 
 }
 
-/*
-Elevator RequestsClearAtCurrentFloor(Elevator e){
-
-    switch(e.config.clearRequestVariant){
-    case CV_All:
-        for(Button btn = 0; btn < N_BUTTONS; btn++){
-            e.requests[e.floor][btn] = 0;
-        }
-        break;
-
-    case CV_InDirn:
-        e.requests[e.floor][B_Cab] = 0;
-        switch(e.dirn){
-        case D_Up:
-            if(!RequestsAbove(e) && !e.requests[e.floor][B_HallUp]){
-                e.requests[e.floor][B_HallDown] = 0;
-            }
-            e.requests[e.floor][B_HallUp] = 0;
-            break;
-
-        case D_Down:
-            if(!RequestsBelow(e) && !e.requests[e.floor][B_HallDown]){
-                e.requests[e.floor][B_HallUp] = 0;
-            }
-            e.requests[e.floor][B_HallDown] = 0;
-            break;
-
-        case D_Stop:
-        default:
-            e.requests[e.floor][B_HallUp] = 0;
-            e.requests[e.floor][B_HallDown] = 0;
-            break;
-        }
-        break;
-
-    default:
-        break;
-    }
-
-    return e;
-}*/

@@ -160,7 +160,7 @@ func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates
 
 	choldHallRequests := make(chan [4][2]bool)
 
-	HallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
+	hallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
 	oldHallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
 
 	isNewHallRequest := make(chan bool)
@@ -176,7 +176,7 @@ func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates
 
 		case clearedHallRequest := <-chHallRequestClearedRx
 :
-			HallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
+			hallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
 
 			//elevio.SetButtonLamp(clearedHallRequest.Button,clearedHallRequest.Floor,false)
 
@@ -185,8 +185,8 @@ func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates
 
 		case button := <-chNewHallRequestRx:
 			fmt.Println("Hall request recieved", button)
-			HallRequests[button.Floor][int(button.Button)] = true
-			go checkifNewHallRequest(choldHallRequests, oldHallRequests, HallRequests)
+			hallRequests[button.Floor][int(button.Button)] = true
+			go checkifNewHallRequest(choldHallRequests, oldHallRequests, hallRequests)
 
 		case temp := <-choldHallRequests:
 			oldHallRequests = temp
@@ -206,7 +206,7 @@ func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates
 						}
 					*/
 
-					input := elevatorsToHRAInput(HallRequests, elevatorStates)
+					input := elevatorsToHRAInput(hallRequests, elevatorStates)
 
 					hraExecutable := ""
 					switch runtime.GOOS {
@@ -238,8 +238,7 @@ func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates
 						return
 					}
 
-					chAssignedHallRequestsTx
- <- *output
+					chAssignedHallRequestsTx<- *output
 					//fmt.Println("Hall requests assigned: ", *output)
 					//fmt.Println("old", oldHallRequests)
 					//fmt.Println("new", HallRequests)
