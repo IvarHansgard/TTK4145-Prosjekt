@@ -151,12 +151,11 @@ func checkifNewHallRequest(choldHallRequests chan [4][2]bool, oldHallRequests, n
 	}
 }
 
-func setRunRequestAssigner(runHallRequestAssigner chan bool, state bool) {
-	runHallRequestAssigner <- state
+func setRunRequestAssigner(isNewHallRequest chan bool, state bool) {
+	isNewHallRequest <- state
 }
 
-func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators chan []elevator.Elevator, chMasterState chan bool,
-	chClearedHallRequests chan elevio.ButtonEvent, hallRequestsTx chan HallRequests, chStopButtonPressed chan bool, chElevatorLost chan bool) {
+func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates chan []elevator.Elevator, chRequestAssigner chan bool, chHallRequestClearedRx chan elevio.ButtonEvent, chAssignedHallRequestsTx chan HallRequests) {
 	fmt.Println("Starting requestAsigner")
 
 	choldHallRequests := make(chan [4][2]bool)
@@ -164,18 +163,16 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 	hallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
 	oldHallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
 
-	runHallRequestAssigner := make(chan bool)
+	isNewHallRequest := make(chan bool)
 
 	var elevatorStates []elevator.Elevator
 	var masterState bool = true
 
 	for {
 		select {
-		case <-chStopButtonPressed:
-			go setRunRequestAssigner(runHallRequestAssigner, true)
-		case temp := <-chMasterState:
+		case temp := <-chRequestAssigner:
 			masterState = temp
-			go setRunRequestAssigner(runHallRequestAssigner, true)
+			go setRunRequestAssigner(isNewHallRequest, true)
 
 		case clearedHallRequest := <-chHallRequestClearedRx
 :
@@ -194,9 +191,9 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 		case temp := <-choldHallRequests:
 			oldHallRequests = temp
 			//fmt.Println("old hall request set to", temp)
-			go setRunRequestAssigner(runHallRequestAssigner, true)
+			go setRunRequestAssigner(isNewHallRequest, true)
 
-		case newHallRequest := <-runHallRequestAssigner:
+		case newHallRequest := <-isNewHallRequest:
 			//fmt.Println("newHallRequest is", newHallRequest)
 			if masterState {
 				//fmt.Println("new hall request")
