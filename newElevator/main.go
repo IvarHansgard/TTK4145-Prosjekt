@@ -74,10 +74,10 @@ func main() {
 	flag.IntVar(&port, "port", 15657, "port of this elevator")
 	flag.Parse()
 
-	//check master state based on flag input
 	//chanels
 	masterState := true
 	chMasterState := make(chan bool)
+	chRequestAssignerMasterState := make(chan bool)
 
 	chElevatorTx := make(chan elevator.Elevator)
 	chElevatorRx := make(chan elevator.Elevator)
@@ -97,15 +97,7 @@ func main() {
 	chHallRequestClearedRx := make(chan elevio.ButtonEvent)
 
 	chPeerEnable := make(chan bool)
-	chPeerRxTx := make(chan peers.PeerUpdate)
-
-	//var peerArray []string
-
-	//used for sending elevator alive signal to watchdog
-	//chWatchdogTx := make(chan int)
-	//chWatchdogRx := make(chan int)
-	//activeWatchdogs := [3]bool{false, false, false}
-	//chActiveWatchdogs := make(chan [3]bool)
+	chPeerRx := make(chan peers.PeerUpdate)
 
 	//used for updating the active watchdogs array (checking which elevators are still alive)
 	fmt.Println("Starting broadcast of, elevator, hallRequest and watchdog")
@@ -121,20 +113,15 @@ func main() {
 	//transmitter and receiver for cleared hall requests
 	go bcast.Transmitter(3003, chHallRequestClearedTx)
 	go bcast.Receiver(3003, chHallRequestClearedRx)
-	//transmitter and receiver for watchdog
-	//go bcast.Transmitter(4001, chWatchdogTx)
-	//go bcast.Receiver(4001, chWatchdogRx)
+	//transmitter and receiver for peer
 	go peers.Transmitter(4001, id, chPeerEnable)
-	go peers.Receiver(4001, chPeerRxTx)
-	//functions for checking the watchdog and sending alive signal
-	//go watchdog.WatchdogSendAlive(id, chWatchdogTx)
-	//go watchdog.WatchdogCheckAlive(chWatchdogRx, chActiveWatchdogs)
+	go peers.Receiver(4001, chPeerRx)
 
 	//functions for running the local elevator
 	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port)
 
 	//function for assigning hall request to slave elevators
-	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her
+	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chRequestAssignerMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her
 
 	fmt.Println("Starting main loop")
 	for {
@@ -143,17 +130,13 @@ func main() {
 			elevatorStatuses[elevator.Id] = elevator
 			chElevatorStatuses <- elevatorStatuses
 
-		//case  <-chActiveWatchdogs:
-		case pUpdate := <-chPeerRxTx:
+		case pUpdate := <-chPeerRx:
 			fmt.Printf("Peer update:\n")
-			fmt.Printf("  Peers:    %q\n", pUpdate.Peers)
-			fmt.Printf("  New:      %q\n", pUpdate.New)
-			fmt.Printf("  Lost:     %q\n", pUpdate.Lost)
-			fmt.Println("Running check master")
 			go checkMaster(chMasterState, masterState, id, pUpdate)
 
 		case state := <-chMasterState:
 			masterState = state
+			chRequestAssignerMasterState <- masterState
 		}
 	}
 }
