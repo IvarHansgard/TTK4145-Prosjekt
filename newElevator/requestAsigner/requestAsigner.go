@@ -27,63 +27,6 @@ type HRAInput struct {
 	States       map[string]HRAElevState `json:"states"`
 }
 
-/*
-	func compareHallRequests(oldHallRequests, newHallRequests [][2]bool) [][2]bool {
-		fmt.Println("Comparing hall requests")
-		fmt.Println("Old hall requests:", oldHallRequests)
-		fmt.Println("New hall requests:", newHallRequests)
-
-		for i := 0; i < len(newHallRequests); i++ {
-			for j := 0; j < 2; j++ {
-				if newHallRequests[i][j] != oldHallRequests[i][j] {
-					oldHallRequests[i][j] = newHallRequests[i][j]
-				}
-			}
-		}
-		return oldHallRequests
-	}
-*/
-/*
-func addHallRequests(button elevio.ButtonEvent) [2]int {
-	var buttonArray [2]int
-	buttonArray[0] = button.Floor
-	buttonArray[1] = int(button.Button)
-	return buttonArray
-}
-*/
-/*
-func checkIfNewRequests(elevators, oldActiveElevators []elevator.Elevator) bool {
-	for i := 0; i < 3; i++ {
-		for j := 0; j < 4; j++ {
-			for k := 0; k < 2; k++ {
-				if elevators[i].Requests[j][k] != oldActiveElevators[i].Requests[j][k] {
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-*/ /*
-git config --global user.name "Your Name"
-git config --global user.email "your.email@example.com"*/
-/*
-	func getHallRequests(elevators []elevator.Elevator) [4][2]bool {
-		var hallRequests [4][2]bool
-		for i := 0; i < 3; i++ {
-			for j := 0; j < 4; j++ {
-				for k := 0; k < 2; k++ {
-					if elevators[i].Requests[j][k] {
-						hallRequests[j][k] = true
-					}
-				}
-			}					elevatorTx <- localElevator
-
-		}
-		return hallRequests
-	}
-*/
-
 func elevatorToHRAElevState(e elevator.Elevator) HRAElevState {
 	var hra HRAElevState
 	//fmt.Println("Converting elevator to HRAElevState:", e)
@@ -136,8 +79,6 @@ func elevatorsToHRAInput(hallRequest [4][2]bool, elevatorArray []elevator.Elevat
 func checkifNewHallRequest(choldHallRequests chan [4][2]bool, oldHallRequests, newHallRequests [4][2]bool) {
 
 	fmt.Println("checking if new hall request")
-	//fmt.Println("new requests:", newHallRequests)
-	//fmt.Println("old requests:", oldHallRequests}
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 2; j++ {
 			if !oldHallRequests[i][j] == newHallRequests[i][j] {
@@ -180,8 +121,6 @@ func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates
 		case clearedHallRequest := <-chHallRequestClearedRx:
 			hallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
 
-			//elevio.SetButtonLamp(clearedHallRequest.Button,clearedHallRequest.Floor,false)
-
 		case activeElevators := <-chElevatorStates:
 			elevatorStates = activeElevators
 
@@ -192,21 +131,14 @@ func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates
 
 		case temp := <-chOldHallRequests:
 			oldHallRequests = temp
-			//fmt.Println("old hall request set to", temp)
 			go setRunRequestAssigner(runHallRequestAssigner, true)
 
 		case newHallRequest := <-runHallRequestAssigner:
-			//fmt.Println("newHallRequest is", newHallRequest)
+
 			if masterState {
-				//fmt.Println("new hall request")
+
 				if newHallRequest {
 					fmt.Println("Asigning requests to elevators")
-					/*
-						if len(oldHallRequests) == 0 {
-							fmt.Println("No new requests")
-							break
-						}
-					*/
 
 					input := elevatorsToHRAInput(hallRequests, elevatorStates)
 
