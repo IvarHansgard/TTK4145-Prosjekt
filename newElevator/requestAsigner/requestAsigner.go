@@ -186,14 +186,7 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 		case activeElevators := <-chElevatorStates:
 			elevatorStates = activeElevators
 
-<<<<<<< HEAD
 		case button := <-chNewHallRequestRx:
-=======
-		case <-chElevatorLost:
-			go setRunRequestAssigner(runHallRequestAssigner, true)
-
-		case button := <-chNewHallRequest:
->>>>>>> 3296aec (ivar)
 			fmt.Println("Hall request recieved", button)
 			hallRequests[button.Floor][int(button.Button)] = true
 			go checkifNewHallRequest(choldHallRequests, oldHallRequests, hallRequests)
