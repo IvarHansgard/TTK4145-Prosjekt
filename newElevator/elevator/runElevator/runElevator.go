@@ -105,7 +105,7 @@ func localElevatorInit(id, port int) elevator.Elevator {
 }
 
 func RunLocalElevator(elevatorTx chan elevator.Elevator, newHallRequest chan elevio.ButtonEvent, assignedHallRequestsRx chan requestAsigner.HallRequests,
-	chClearedHallRequests chan elevio.ButtonEvent, strId string, port int) {
+	chClearedHallRequests chan elevio.ButtonEvent, strId string, port int, chStopButtonPressed chan bool) {
 	fmt.Println("Starting localElevator")
 	id, err := strconv.Atoi(strId)
 	if err != nil {
@@ -170,19 +170,19 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator, newHallRequest chan ele
 					doorTimeoutSignal.Reset(3 * time.Second)
 					//kanskje cleare dobelt her
 					//if localElevator.Requests[localElevator.Floor][0] {
-						//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						//localElevator.Dirn = elevio.MD_Up
-						//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						//localElevator.Dirn = pair.Dirn
-						//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
+					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = elevio.MD_Up
+					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = pair.Dirn
+					//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 					//} else {
-						//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
+					//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 					//}
 					//if localElevator.Requests[localElevator.Floor][1] {
-						//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						//localElevator.Dirn = elevio.MD_Down
-						//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						//localElevator.Dirn = pair.Dirn
+					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = elevio.MD_Down
+					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = pair.Dirn
 					//}
 					chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
 					localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
@@ -416,10 +416,15 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator, newHallRequest chan ele
 			fmt.Printf("%+v\n", localElevator)
 			for f := 0; f < 4; f++ {
 				for b := elevio.ButtonType(0); b < 3; b++ {
+					localElevator.Requests[f][b] = false
 					elevio.SetButtonLamp(b, f, false)
-					elevio.SetMotorDirection(elevio.MD_Stop)
 				}
 			}
+			elevio.SetMotorDirection(elevio.MD_Stop)
+			elevio.SetDoorOpenLamp(false)
+			localElevator.Behaviour = elevator.EB_Disconnected
+			elevatorTx <- localElevator
+			chStopButtonPressed <- true
 		}
 	}
 }

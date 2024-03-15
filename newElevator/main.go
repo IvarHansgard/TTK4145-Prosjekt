@@ -9,6 +9,7 @@ import (
 	"elevatorlib/requestAsigner"
 	"flag"
 	"fmt"
+	"strconv"
 )
 
 func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate peers.PeerUpdate) {
@@ -99,6 +100,8 @@ func main() {
 	chPeerEnable := make(chan bool)
 	chPeerRx := make(chan peers.PeerUpdate)
 
+	chStopButtonPressed := make(chan bool)
+
 	//used for updating the active watchdogs array (checking which elevators are still alive)
 	fmt.Println("Starting broadcast of, elevator, hallRequest and watchdog")
 	//transmitter and receiver for elevator states
@@ -118,10 +121,10 @@ func main() {
 	go peers.Receiver(4001, chPeerRx)
 
 	//functions for running the local elevator
-	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port)
+	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port, chStopButtonPressed)
 
 	//function for assigning hall request to slave elevators
-	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chRequestAssignerMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her
+	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chRequestAssignerMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx, chStopButtonPressed) //jobbe med den her
 
 	fmt.Println("Starting main loop")
 	for {
@@ -132,6 +135,15 @@ func main() {
 
 		case pUpdate := <-chPeerRx:
 			fmt.Printf("Peer update:\n")
+			if pUpdate.Lost[0] != "" {
+				loss, err := strconv.Atoi(pUpdate.Lost[0])
+				if err != nil {
+					fmt.Println("Error:", err)
+					return
+				}
+				elevatorStatuses[loss].Behaviour = elevator.EB_Disconnected
+				chElevatorStatuses <- elevatorStatuses
+			}
 			go checkMaster(chMasterState, masterState, id, pUpdate)
 
 		case state := <-chMasterState:
