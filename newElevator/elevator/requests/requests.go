@@ -91,7 +91,7 @@ func HallDownRequestHere(e Elevator) bool {
 
 }
 
-func RequestCabHere(e Elevator) bool {
+func CabRequestHere(e Elevator) bool {
 	if  e.Requests[e.Floor][elevio.BT_Cab]{
 		return true
 	}else{
@@ -192,9 +192,9 @@ DirnBehaviourPair RequestsChooseDirection(Elevator e){
 func RequestsShouldStop(e Elevator) bool {
 	switch e.Dirn {
 	case elevio.MD_Down:
-		return HallDownRequestHere(e) || RequestCabHere(e) || !CabRequestsBelow(e) //bool eller int?
+		return HallDownRequestHere(e) || CabRequestHere(e) || !CabRequestsBelow(e) //bool eller int?
 	case elevio.MD_Up:
-		return HallUpRequestHere(e) || RequestCabHere(e) || !CabRequestsAbove(e)
+		return HallUpRequestHere(e) || CabRequestHere(e) || !CabRequestsAbove(e)
 	case elevio.MD_Stop:
 		fallthrough
 	default:
