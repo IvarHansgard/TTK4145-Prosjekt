@@ -92,20 +92,6 @@ func setAllLights(e elevator.Elevator) {
 	}
 }
 
-func onInitBetweenFloors(e elevator.Elevator) elevator.Elevator { //fikse denne
-
-	fmt.Println("Elevator initialized between floors")
-
-	e.Dirn = requests.RequestsChooseDirection(e).Dirn
-	e.Behaviour = requests.RequestsChooseDirection(e).Behaviour
-	// if e.Floor != 0 && e.Floor != 3 {
-	// 	elevio.SetMotorDirection(elevio.MD_Down)
-	// 	e.Dirn = elevio.MD_Down
-	// 	e.Behaviour = elevator.EB_Moving
-	// }ed
-	return e
-}
-
 func localElevatorInit(id, port int) elevator.Elevator {
 	fmt.Println("Initializing elevator ", id)
 
@@ -142,8 +128,11 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator, newHallRequest chan ele
 	go elevio.PollObstructionSwitch(chObstructionSwitch)
 	go elevio.PollStopButton(chStopButton)
 
-	if localElevator.Floor == -1 {
-		localElevator = onInitBetweenFloors(localElevator)
+	if elevio.GetFloor() == -1 {
+		fmt.Println("elevator initialized on ", elevio.GetFloor())
+		elevio.SetMotorDirection(elevio.MD_Down)
+		localElevator.Dirn = elevio.MD_Down
+		localElevator.Behaviour = elevator.EB_Moving
 	}
 	for {
 		select {

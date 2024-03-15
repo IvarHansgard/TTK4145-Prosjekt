@@ -1,6 +1,6 @@
 package requests
 
-import ( 
+import (
 	"elevatorlib/elevator"
 	. "elevatorlib/elevator"
 	"elevatorlib/elevio"
@@ -125,7 +125,7 @@ func RequestsChooseDirection(e Elevator) DirnBehaviourPair {
 			fmt.Println("md stop, requests below")
 			return DirnBehaviourPair{elevio.MD_Down, EB_Moving}
 		} else {
-			fmt.Println("md stop, idle", e.Requests)
+			fmt.Println("md stop, idle")
 			return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
 		}
 
@@ -311,7 +311,6 @@ func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 	return buttonToclear
 
 }
-
 
 /*
 Elevator RequestsClearAtCurrentFloor(Elevator e){
