@@ -133,6 +133,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 
 				if localElevator.Dirn == elevio.MD_Stop {
 					fmt.Println("door open")
+					localElevator.Behaviour = elevator.EB_DoorOpen
 					elevio.SetDoorOpenLamp(true)
 					doorTimeoutSignal.Reset(3 * time.Second)
 				} else {
@@ -164,6 +165,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 				localElevator.Behaviour = dirn.Behaviour
 				if localElevator.Dirn == elevio.MD_Stop {
 					fmt.Println("door open")
+					localElevator.Behaviour = elevator.EB_DoorOpen
 					elevio.SetDoorOpenLamp(true)
 					doorTimeoutSignal.Reset(3 * time.Second)
 				} else {
@@ -196,6 +198,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 				localElevator.Behaviour = dirn.Behaviour
 				if localElevator.Dirn == elevio.MD_Stop {
 					fmt.Println("door open")
+					localElevator.Behaviour = elevator.EB_DoorOpen
 					elevio.SetDoorOpenLamp(true)
 					doorTimeoutSignal.Reset(3 * time.Second)
 				} else {

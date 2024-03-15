@@ -12,115 +12,6 @@ import (
 	"strconv"
 )
 
-/*
-	func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate peers.PeerUpdate) {
-		if len(pUpdate.Peers) == 1 && pUpdate.New == id {
-			fmt.Println("Start Up")
-			fmt.Println("My master state is", masterState)
-		} else if len(pUpdate.Lost) > 0 {
-			fmt.Println("Lost peer", pUpdate.Lost)
-			fmt.Println("checking master")
-			if pUpdate.Peers[0] == id {
-				if !masterState {
-					fmt.Println("Changing to master")
-					chMasterState <- true
-				}
-				fmt.Println("I am master")
-			} else {
-				if masterState {
-					fmt.Println("Changing to slave")
-					chMasterState <- false
-				}
-				fmt.Println("I am slave")
-			}
-		} else if pUpdate.New != "" && pUpdate.New != id {
-			fmt.Println("New peer", pUpdate.New)
-			fmt.Println("checking master")
-			if pUpdate.Peers[0] == id {
-				if !masterState {
-					fmt.Println("Changing to master")
-					chMasterState <- true
-				}
-				fmt.Println("I am master")
-			} else {
-				if masterState {
-					fmt.Println("Changing to slave")
-					chMasterState <- false
-				}
-				fmt.Println("I am slave")
-			}
-		} else if len(pUpdate.Peers) > 0 {
-			if pUpdate.Peers[0] == id {
-				if !masterState {
-					fmt.Println("Changing to master")
-					chMasterState <- true
-				}
-				fmt.Println("I am master")
-			} else {
-				if masterState {
-					fmt.Println("Changing to slave")
-					chMasterState <- false
-				}
-				fmt.Println("I am slave")
-			}
-		}
-	}
-*/
-
-/*
-	func checkMaster(chMasterState chan bool, masterState bool, id string, peerUpdate peers.PeerUpdate) {
-		if len(peerUpdate.Peers) == 1 && peerUpdate.New == id {
-			fmt.Println("Start Up")
-			fmt.Println("My master state is", masterState)
-		} else if len(peerUpdate.Lost) > 0 {
-			fmt.Println("Lost peer", peerUpdate.Lost)
-			fmt.Println("checking master")
-			if peerUpdate.Peers[0] == id {
-				if !masterState {
-					fmt.Println("Changing to master")
-					chMasterState <- true
-				}
-				fmt.Println("I am master")
-			} else {
-				if masterState {
-					fmt.Println("Changing to slave")
-					chMasterState <- false
-				}
-				fmt.Println("I am slave")
-			}
-		} else if peerUpdate.New != "" && peerUpdate.New != id {
-			fmt.Println("New peer", peerUpdate.New)
-			fmt.Println("checking master")
-			if peerUpdate.Peers[0] == id {
-				if !masterState {
-					fmt.Println("Changing to master")
-					chMasterState <- true
-				}
-				fmt.Println("I am master")
-			} else {
-				if masterState {
-					fmt.Println("Changing to slave")
-					chMasterState <- false
-				}
-				fmt.Println("I am slave")
-			}
-		} else if len(peerUpdate.Peers) > 0 {
-			if peerUpdate.Peers[0] == id {
-				if !masterState {
-					fmt.Println("Changing to master")
-					chMasterState <- true
-				}
-				fmt.Println("I am master")
-			} else {
-				if masterState {
-					fmt.Println("Changing to slave")
-					chMasterState <- false
-				}
-				fmt.Println("I am slave")
-			}
-		}
-	}
-*/
 func assignDisconnected(id string, peerUpdate peers.PeerUpdate, elevatorStates []elevator.Elevator, chElevatorStates chan []elevator.Elevator, chElevatorLost chan bool) {
 	if len(peerUpdate.Lost) > 0 && peerUpdate.Lost[0] != id {
 		for i := 0; i < len(peerUpdate.Lost); i++ {
@@ -154,7 +45,7 @@ func checkMaster(chMasterState chan bool, masterState bool, id string, peerUpdat
 		fmt.Printf("  Peers:    %q\n", peerUpdate.Peers)
 		fmt.Printf("  New:      %q\n", peerUpdate.New)
 		fmt.Printf("  Lost:     %q\n", peerUpdate.Lost)
-		if peerUpdate.Peers[0] == id {
+		if (peerUpdate.Peers[0] == id) || (id == "0") {
 			if !masterState {
 				fmt.Println("changed master state to true")
 				chMasterState <- true
