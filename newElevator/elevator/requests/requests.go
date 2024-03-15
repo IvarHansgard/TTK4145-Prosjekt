@@ -273,7 +273,7 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 		// 	}*/
 		// e.Requests[e.Floor][elevio.BT_HallUp] = false
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
-		//if !CabRequestsAbove(e) {
+		//if !RequestsAbove(e) {
 		//	e.Requests[e.Floor][elevio.BT_HallDown] = false
 		//}
 	case elevio.MD_Down:
@@ -281,7 +281,7 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 		 	e.Requests[e.Floor][elevio.BT_HallUp] = false
 		 }
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
-		//if !CabRequestsBelow(e) {
+		//if !RequestsBelow(e) {
 		//	e.Requests[e.Floor][elevio.BT_HallUp] = false
 		//}
 	case elevio.MD_Stop:
@@ -290,15 +290,12 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
 	}
-	/*
-		default:
-			break
-		}*/
+
 	return e
 
 }
 
-func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
+func HallRequestsClearAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 	var buttonToclear elevio.ButtonEvent
 	switch e.Dirn {
 	case elevio.MD_Down:
@@ -328,8 +325,7 @@ func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 
 		}
 	}
-	//nå sender vi ikke to buttons til buttonToClear, skal vi ha en ekstra if som sier at dersom det verken er RequestAbove eller RequestBelow,
-	//skal vi ha en ekstra if som sier at begge to må cleares
+
 	if e.Floor == 0 {
 		buttonToclear.Floor = e.Floor
 		buttonToclear.Button = elevio.BT_HallUp
@@ -356,14 +352,14 @@ Elevator RequestsClearAtCurrentFloor(Elevator e){
         e.requests[e.floor][B_Cab] = 0;
         switch(e.dirn){
         case D_Up:
-            if(!CabRequestsAbove(e) && !e.requests[e.floor][B_HallUp]){
+            if(!RequestsAbove(e) && !e.requests[e.floor][B_HallUp]){
                 e.requests[e.floor][B_HallDown] = 0;
             }
             e.requests[e.floor][B_HallUp] = 0;
             break;
 
         case D_Down:
-            if(!CabRequestsBelow(e) && !e.requests[e.floor][B_HallDown]){
+            if(!RequestsBelow(e) && !e.requests[e.floor][B_HallDown]){
                 e.requests[e.floor][B_HallUp] = 0;
             }
             e.requests[e.floor][B_HallDown] = 0;
@@ -383,4 +379,3 @@ Elevator RequestsClearAtCurrentFloor(Elevator e){
 
     return e;
 }*/
-
