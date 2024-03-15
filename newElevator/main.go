@@ -66,18 +66,18 @@ import (
 		}
 	}
 */
-func assignDisconnected(id string, pUpdate peers.PeerUpdate, elevatorStatuses []elevator.Elevator, chElevatorStatuses chan []elevator.Elevator) {
+func assignDisconnected(id string, pUpdate peers.PeerUpdate, elevatorStatuses []elevator.Elevator, chElevatorStatuses chan []elevator.Elevator, chElevatorLost chan bool) {
 	if len(pUpdate.Lost) > 0 && pUpdate.Lost[0] != id {
 		for i := 0; i < len(pUpdate.Lost); i++ {
 			elevId, err := strconv.Atoi(pUpdate.Lost[i])
 			if err != nil {
 				fmt.Println("Error:", err)
-				return
 			}
 			elevatorStatuses[elevId].Behaviour = elevator.EB_Disconnected
 			elevatorStatuses[elevId].Dirn = elevio.MD_Stop
 			fmt.Println("elevator", elevId, "disconnected")
 			chElevatorStatuses <- elevatorStatuses
+			chElevatorLost <- true
 		}
 	}
 	return
@@ -200,6 +200,7 @@ func main() {
 	chPeerRx := make(chan peers.PeerUpdate)
 
 	chStopButtonPressed := make(chan bool)
+	chElevatorLost := make(chan bool)
 
 	//used for updating the active watchdogs array (checking which elevators are still alive)
 	fmt.Println("Starting broadcast of, elevator, hallRequest and watchdog")
@@ -223,7 +224,11 @@ func main() {
 	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port, chStopButtonPressed)
 
 	//function for assigning hall request to slave elevators
+<<<<<<< HEAD
 	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStates, chRequestAssigner, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her
+=======
+	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chRequestAssignerMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx, chStopButtonPressed, chElevatorLost) //jobbe med den her
+>>>>>>> 3296aec (ivar)
 
 	fmt.Println("Starting main loop")
 	for {
@@ -234,7 +239,12 @@ func main() {
 
 		case peerUpdate := <-chPeerRx:
 			fmt.Printf("Peer update:\n")
+<<<<<<< HEAD
 			go checkMaster(chMasterState, masterState, id, peerUpdate)
+=======
+			go assignDisconnected(id, pUpdate, elevatorStatuses, chElevatorStatuses, chElevatorLost)
+			go checkMaster(chMasterState, masterState, id, pUpdate)
+>>>>>>> 3296aec (ivar)
 
 		case state := <-chMasterState:
 			masterState = state

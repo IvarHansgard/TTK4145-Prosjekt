@@ -247,30 +247,52 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 			case 1:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
+<<<<<<< HEAD
 						localElevator.Requests[i][j] = hallRequests["two"][i][j]
 
+=======
+						localElevator.Requests[i][j] = HallRequests["two"][i][j]
+>>>>>>> 3296aec (ivar)
 					}
 				}
 				fmt.Println("Assigned hall requests: ", hallRequests["two"])
 				dirn := requests.RequestsChooseDirection(localElevator)
 				localElevator.Dirn = dirn.Dirn
 				localElevator.Behaviour = dirn.Behaviour
+
+				if localElevator.Dirn == elevio.MD_Stop {
+					fmt.Println("door open")
+					elevio.SetDoorOpenLamp(true)
+					doorTimeoutSignal.Reset(3 * time.Second)
+				} else {
+					elevio.SetMotorDirection(localElevator.Dirn)
+				}
 				setAllLights(localElevator)
-				elevio.SetMotorDirection(localElevator.Dirn)
 
 			case 2:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
+<<<<<<< HEAD
 						localElevator.Requests[i][j] = hallRequests["three"][i][j]
 
+=======
+						localElevator.Requests[i][j] = HallRequests["three"][i][j]
+>>>>>>> 3296aec (ivar)
 					}
 				}
 				fmt.Println("Assigned hall requests: ", hallRequests["three"])
 				dirn := requests.RequestsChooseDirection(localElevator)
 				localElevator.Dirn = dirn.Dirn
 				localElevator.Behaviour = dirn.Behaviour
+
+				if localElevator.Dirn == elevio.MD_Stop {
+					fmt.Println("door open")
+					elevio.SetDoorOpenLamp(true)
+					doorTimeoutSignal.Reset(3 * time.Second)
+				} else {
+					elevio.SetMotorDirection(localElevator.Dirn)
+				}
 				setAllLights(localElevator)
-				elevio.SetMotorDirection(localElevator.Dirn)
 			}
 			chElevatorTx <- localElevator
 
