@@ -9,50 +9,59 @@ import (
 	"elevatorlib/requestAsigner"
 	"flag"
 	"fmt"
-	"sort"
 )
 
-/*
-	func checkMaster(chMasterState chan bool, id int, chActiveWatchdogs chan [3]bool) {
-		fmt.Println("activeElevators changed checking master")
-		oldMasterState := false
-		newMasterState := oldMasterState
-		for {
-			select {
-			case temp := <-chMasterState:
-				oldMasterState = temp
-			case activeElevators := <-chActiveWatchdogs:
-				if id != 0 {
-					if activeElevators[id-1] || activeElevators[0] {
-						fmt.Println("Elevator:", id, "is slave")
-						newMasterState = false
-						fmt.Println("activeElevators", activeElevators)
-					} else {
-						fmt.Println("Elevator:", id, "is master")
-						fmt.Println("activeElevators", activeElevators)
-						newMasterState = true
-					}
-				} else {
-					fmt.Println("Elevator:", id, "is master")
-					fmt.Println("activeElevators", activeElevators)
-					newMasterState = true
-				}
-				if oldMasterState != newMasterState {
-					chMasterState <- newMasterState
-					oldMasterState = newMasterState
-				}
-			default:
-				fmt.Print(oldMasterState)
-				chMasterState <- oldMasterState
+func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate peers.PeerUpdate) {
+	if len(pUpdate.Peers) == 1 && pUpdate.New == id {
+		fmt.Println("Start Up")
+		fmt.Println("My master state is", masterState)
+	} else if len(pUpdate.Lost) > 0 {
+		fmt.Println("Lost peer", pUpdate.Lost)
+		fmt.Println("checking master")
+		if pUpdate.Peers[0] == id {
+			if !masterState {
+				fmt.Println("Changing to master")
+				chMasterState <- true
 			}
-
+			fmt.Println("I am master")
+		} else {
+			if masterState {
+				fmt.Println("Changing to slave")
+				chMasterState <- false
+			}
+			fmt.Println("I am slave")
+		}
+	} else if pUpdate.New != "" && pUpdate.New != id {
+		fmt.Println("New peer", pUpdate.New)
+		fmt.Println("checking master")
+		if pUpdate.Peers[0] == id {
+			if !masterState {
+				fmt.Println("Changing to master")
+				chMasterState <- true
+			}
+			fmt.Println("I am master")
+		} else {
+			if masterState {
+				fmt.Println("Changing to slave")
+				chMasterState <- false
+			}
+			fmt.Println("I am slave")
+		}
+	} else if len(pUpdate.Peers) > 0 {
+		if pUpdate.Peers[0] == id {
+			if !masterState {
+				fmt.Println("Changing to master")
+				chMasterState <- true
+			}
+			fmt.Println("I am master")
+		} else {
+			if masterState {
+				fmt.Println("Changing to slave")
+				chMasterState <- false
+			}
+			fmt.Println("I am slave")
 		}
 	}
-*/
-
-func chooseMaster(peers []string) string {
-	sort.Strings(peers)
-	return peers[0]
 }
 
 type hallRequests map[string][][2]int
@@ -67,6 +76,7 @@ func main() {
 
 	//check master state based on flag input
 	//chanels
+	masterState := true
 	chMasterState := make(chan bool)
 
 	chElevatorTx := make(chan elevator.Elevator)
@@ -88,6 +98,8 @@ func main() {
 
 	chPeerEnable := make(chan bool)
 	chPeerRxTx := make(chan peers.PeerUpdate)
+
+	//var peerArray []string
 
 	//used for sending elevator alive signal to watchdog
 	//chWatchdogTx := make(chan int)
@@ -124,9 +136,6 @@ func main() {
 	//function for assigning hall request to slave elevators
 	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her
 
-	fmt.Println("Starting peer")
-	chPeerEnable <- true
-
 	fmt.Println("Starting main loop")
 	for {
 		select {
@@ -136,18 +145,15 @@ func main() {
 
 		//case  <-chActiveWatchdogs:
 		case pUpdate := <-chPeerRxTx:
-			fmt.Println("Peers updated", pUpdate)
-			if len(pUpdate.Peers) > 0 {
-				masterID := chooseMaster(pUpdate.Peers)
-				if id == masterID {
-					fmt.Println("i am master")
-					chMasterState <- true
-				} else {
-					fmt.Println("i am slave")
-					chMasterState <- false
-				}
-			}
-		}
+			fmt.Printf("Peer update:\n")
+			fmt.Printf("  Peers:    %q\n", pUpdate.Peers)
+			fmt.Printf("  New:      %q\n", pUpdate.New)
+			fmt.Printf("  Lost:     %q\n", pUpdate.Lost)
+			fmt.Println("Running check master")
+			go checkMaster(chMasterState, masterState, id, pUpdate)
 
+		case state := <-chMasterState:
+			masterState = state
+		}
 	}
 }

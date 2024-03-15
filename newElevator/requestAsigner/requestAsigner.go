@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"time"
 )
- 
+
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
 // This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
 
@@ -26,6 +26,7 @@ type HRAInput struct {
 	HallRequests [4][2]bool              `json:"hallRequests"`
 	States       map[string]HRAElevState `json:"states"`
 }
+
 /*
 	func compareHallRequests(oldHallRequests, newHallRequests [][2]bool) [][2]bool {
 		fmt.Println("Comparing hall requests")
@@ -91,7 +92,6 @@ func elevatorsToHRAInput(hallRequest [4][2]bool, elevatorArray []elevator.Elevat
 	return input
 }
 
-
 func checkifNewHallRequest(choldHallRequests chan [4][2]bool, oldHallRequests, newHallRequests [4][2]bool) {
 
 	fmt.Println("checking if new hall request")
@@ -153,7 +153,7 @@ git config --global user.email "your.email@example.com"*/
 func setIsNewHallRequest(isNewHallRequest chan bool, state bool) {
 	isNewHallRequest <- state
 	return
-} 
+}
 func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators chan []elevator.Elevator, chMasterState chan bool, chClearedHallRequests chan elevio.ButtonEvent, hallRequestsTx chan HallRequests) {
 	fmt.Println("Starting requestAsigner")
 
@@ -180,18 +180,20 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 				}
 			}
 		}*/
-		case temp := <-chMasterState:
-			if temp != masterState {
-				masterState = temp
-				if masterState {
-					//assign lost elevators orders to other elevators
-					go setIsNewHallRequest(isNewHallRequest, true)
+		/*
+			case temp := <-chMasterState:
+				if temp != masterState {
+					masterState = temp
+					if masterState {
+						//assign lost elevators orders to other elevators
+						go setIsNewHallRequest(isNewHallRequest, true)
+					}
 				}
-			}
-			
-
+		*/
 		case clearedHallRequest := <-chClearedHallRequests:
 			HallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
+
+			//elevio.SetButtonLamp(clearedHallRequest.Button,clearedHallRequest.Floor,false)
 
 		case activeElevators := <-chActiveElevators:
 			elevatorStates = activeElevators

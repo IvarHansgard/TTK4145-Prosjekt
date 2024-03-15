@@ -242,7 +242,7 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator, newHallRequest chan ele
 					elevio.SetMotorDirection(localElevator.Dirn)
 				}
 				setAllLights(localElevator)
-
+				
 			case 1:
 				for i := 0; i < 4; i++ {
 					for j := 0; j < 2; j++ {
