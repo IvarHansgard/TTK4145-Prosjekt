@@ -9,8 +9,108 @@ import (
 	"elevatorlib/requestAsigner"
 	"flag"
 	"fmt"
+	"strconv"
 )
 
+/*
+	func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate peers.PeerUpdate) {
+		if len(pUpdate.Peers) == 1 && pUpdate.New == id {
+			fmt.Println("Start Up")
+			fmt.Println("My master state is", masterState)
+		} else if len(pUpdate.Lost) > 0 {
+			fmt.Println("Lost peer", pUpdate.Lost)
+			fmt.Println("checking master")
+			if pUpdate.Peers[0] == id {
+				if !masterState {
+					fmt.Println("Changing to master")
+					chMasterState <- true
+				}
+				fmt.Println("I am master")
+			} else {
+				if masterState {
+					fmt.Println("Changing to slave")
+					chMasterState <- false
+				}
+				fmt.Println("I am slave")
+			}
+		} else if pUpdate.New != "" && pUpdate.New != id {
+			fmt.Println("New peer", pUpdate.New)
+			fmt.Println("checking master")
+			if pUpdate.Peers[0] == id {
+				if !masterState {
+					fmt.Println("Changing to master")
+					chMasterState <- true
+				}
+				fmt.Println("I am master")
+			} else {
+				if masterState {
+					fmt.Println("Changing to slave")
+					chMasterState <- false
+				}
+				fmt.Println("I am slave")
+			}
+		} else if len(pUpdate.Peers) > 0 {
+			if pUpdate.Peers[0] == id {
+				if !masterState {
+					fmt.Println("Changing to master")
+					chMasterState <- true
+				}
+				fmt.Println("I am master")
+			} else {
+				if masterState {
+					fmt.Println("Changing to slave")
+					chMasterState <- false
+				}
+				fmt.Println("I am slave")
+			}
+		}
+	}
+*/
+func assignDisconnected(id string, pUpdate peers.PeerUpdate, elevatorStatuses []elevator.Elevator, chElevatorStatuses chan []elevator.Elevator) {
+	if len(pUpdate.Lost) > 0 && pUpdate.Lost[0] != id {
+		for i := 0; i < len(pUpdate.Lost); i++ {
+			elevId, err := strconv.Atoi(pUpdate.Lost[i])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			elevatorStatuses[elevId].Behaviour = elevator.EB_Disconnected
+			elevatorStatuses[elevId].Dirn = elevio.MD_Stop
+			fmt.Println("elevator", elevId, "disconnected")
+			chElevatorStatuses <- elevatorStatuses
+		}
+	}
+	return
+}
+
+func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate peers.PeerUpdate) {
+	ignore := false
+	for i := 0; i < len(pUpdate.Lost); i++ {
+		if pUpdate.Lost[i] == id {
+			ignore = true
+		}
+	}
+	if pUpdate.New == id {
+		ignore = true
+	}
+	if !ignore {
+		fmt.Printf("Peer update:\n")
+		fmt.Printf("  Peers:    %q\n", pUpdate.Peers)
+		fmt.Printf("  New:      %q\n", pUpdate.New)
+		fmt.Printf("  Lost:     %q\n", pUpdate.Lost)
+		if pUpdate.Peers[0] == id {
+			if !masterState {
+				fmt.Println("changed master state to true")
+				chMasterState <- true
+			}
+		} else {
+			if masterState {
+				fmt.Println("changed master state to false")
+				chMasterState <- false
+			}
+		}
+	}
+	return
 func checkMaster(chMasterState chan bool, masterState bool, id string, peerUpdate peers.PeerUpdate) {
 	if len(peerUpdate.Peers) == 1 && peerUpdate.New == id {
 		fmt.Println("Start Up")
@@ -99,6 +199,8 @@ func main() {
 	chPeerEnable := make(chan bool)
 	chPeerRx := make(chan peers.PeerUpdate)
 
+	chStopButtonPressed := make(chan bool)
+
 	//used for updating the active watchdogs array (checking which elevators are still alive)
 	fmt.Println("Starting broadcast of, elevator, hallRequest and watchdog")
 	//transmitter and receiver for elevator states
@@ -118,7 +220,7 @@ func main() {
 	go peers.Receiver(4001, chPeerRx)
 
 	//functions for running the local elevator
-	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port)
+	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port, chStopButtonPressed)
 
 	//function for assigning hall request to slave elevators
 	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStates, chRequestAssigner, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her

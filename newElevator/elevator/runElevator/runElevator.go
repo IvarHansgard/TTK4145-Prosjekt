@@ -133,6 +133,7 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 		elevio.SetMotorDirection(elevio.MD_Down)
 		localElevator.Dirn = elevio.MD_Down
 		localElevator.Behaviour = elevator.EB_Moving
+		elevatorTx <- localElevator
 	}
 	for {
 		select {
@@ -175,14 +176,23 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 						//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
 						//localElevator.Dirn = pair.Dirn
 						//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
+					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = elevio.MD_Up
+					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = pair.Dirn
+					//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 					//} else {
-						//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
+					//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 					//}
 					//if localElevator.Requests[localElevator.Floor][1] {
 						//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
 						//localElevator.Dirn = elevio.MD_Down
 						//chHallRequestClearedTx <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
 						//localElevator.Dirn = pair.Dirn
+					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = elevio.MD_Down
+					//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					//localElevator.Dirn = pair.Dirn
 					//}
 					chHallRequestClearedTx <- requests.HallRequestsClearAtCurrentFloor(localElevator)
 					localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
@@ -411,10 +421,16 @@ func RunLocalElevator(chElevatorTx chan elevator.Elevator, chNewHallRequestTx ch
 			fmt.Printf("%+v\n", localElevator)
 			for f := 0; f < 4; f++ {
 				for b := elevio.ButtonType(0); b < 3; b++ {
+					localElevator.Requests[f][b] = false
 					elevio.SetButtonLamp(b, f, false)
-					elevio.SetMotorDirection(elevio.MD_Stop)
 				}
 			}
+			localElevator.Dirn = elevio.MD_Stop
+			localElevator.Behaviour = elevator.EB_Disconnected
+			elevio.SetMotorDirection(localElevator.Dirn)
+			elevio.SetDoorOpenLamp(false)
+			elevatorTx <- localElevator
+			chStopButtonPressed <- true
 		}
 	}
 }
