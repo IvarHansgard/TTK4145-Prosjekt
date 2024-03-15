@@ -111,6 +111,8 @@ func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate p
 		}
 	}
 	return
+}
+/*
 func checkMaster(chMasterState chan bool, masterState bool, id string, peerUpdate peers.PeerUpdate) {
 	if len(peerUpdate.Peers) == 1 && peerUpdate.New == id {
 		fmt.Println("Start Up")
@@ -163,7 +165,7 @@ func checkMaster(chMasterState chan bool, masterState bool, id string, peerUpdat
 		}
 	}
 }
-
+*/
 type hallRequests map[string][][2]int
 
 func main() {
@@ -224,11 +226,7 @@ func main() {
 	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port, chStopButtonPressed)
 
 	//function for assigning hall request to slave elevators
-<<<<<<< HEAD
 	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStates, chRequestAssigner, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her
-=======
-	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chRequestAssignerMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx, chStopButtonPressed, chElevatorLost) //jobbe med den her
->>>>>>> 3296aec (ivar)
 
 	fmt.Println("Starting main loop")
 	for {
@@ -239,12 +237,8 @@ func main() {
 
 		case peerUpdate := <-chPeerRx:
 			fmt.Printf("Peer update:\n")
-<<<<<<< HEAD
+			go assignDisconnected(id, peerUpdate, elevatorStatuses, chElevatorStatuses, chElevatorLost)
 			go checkMaster(chMasterState, masterState, id, peerUpdate)
-=======
-			go assignDisconnected(id, pUpdate, elevatorStatuses, chElevatorStatuses, chElevatorLost)
-			go checkMaster(chMasterState, masterState, id, pUpdate)
->>>>>>> 3296aec (ivar)
 
 		case state := <-chMasterState:
 			masterState = state
