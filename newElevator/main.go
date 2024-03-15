@@ -12,57 +12,105 @@ import (
 	"strconv"
 )
 
-func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate peers.PeerUpdate) {
-	if len(pUpdate.Peers) == 1 && pUpdate.New == id {
-		fmt.Println("Start Up")
-		fmt.Println("My master state is", masterState)
-	} else if len(pUpdate.Lost) > 0 {
-		fmt.Println("Lost peer", pUpdate.Lost)
-		fmt.Println("checking master")
-		if pUpdate.Peers[0] == id {
-			if !masterState {
-				fmt.Println("Changing to master")
-				chMasterState <- true
+/*
+	func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate peers.PeerUpdate) {
+		if len(pUpdate.Peers) == 1 && pUpdate.New == id {
+			fmt.Println("Start Up")
+			fmt.Println("My master state is", masterState)
+		} else if len(pUpdate.Lost) > 0 {
+			fmt.Println("Lost peer", pUpdate.Lost)
+			fmt.Println("checking master")
+			if pUpdate.Peers[0] == id {
+				if !masterState {
+					fmt.Println("Changing to master")
+					chMasterState <- true
+				}
+				fmt.Println("I am master")
+			} else {
+				if masterState {
+					fmt.Println("Changing to slave")
+					chMasterState <- false
+				}
+				fmt.Println("I am slave")
 			}
-			fmt.Println("I am master")
-		} else {
-			if masterState {
-				fmt.Println("Changing to slave")
-				chMasterState <- false
+		} else if pUpdate.New != "" && pUpdate.New != id {
+			fmt.Println("New peer", pUpdate.New)
+			fmt.Println("checking master")
+			if pUpdate.Peers[0] == id {
+				if !masterState {
+					fmt.Println("Changing to master")
+					chMasterState <- true
+				}
+				fmt.Println("I am master")
+			} else {
+				if masterState {
+					fmt.Println("Changing to slave")
+					chMasterState <- false
+				}
+				fmt.Println("I am slave")
 			}
-			fmt.Println("I am slave")
-		}
-	} else if pUpdate.New != "" && pUpdate.New != id {
-		fmt.Println("New peer", pUpdate.New)
-		fmt.Println("checking master")
-		if pUpdate.Peers[0] == id {
-			if !masterState {
-				fmt.Println("Changing to master")
-				chMasterState <- true
+		} else if len(pUpdate.Peers) > 0 {
+			if pUpdate.Peers[0] == id {
+				if !masterState {
+					fmt.Println("Changing to master")
+					chMasterState <- true
+				}
+				fmt.Println("I am master")
+			} else {
+				if masterState {
+					fmt.Println("Changing to slave")
+					chMasterState <- false
+				}
+				fmt.Println("I am slave")
 			}
-			fmt.Println("I am master")
-		} else {
-			if masterState {
-				fmt.Println("Changing to slave")
-				chMasterState <- false
-			}
-			fmt.Println("I am slave")
-		}
-	} else if len(pUpdate.Peers) > 0 {
-		if pUpdate.Peers[0] == id {
-			if !masterState {
-				fmt.Println("Changing to master")
-				chMasterState <- true
-			}
-			fmt.Println("I am master")
-		} else {
-			if masterState {
-				fmt.Println("Changing to slave")
-				chMasterState <- false
-			}
-			fmt.Println("I am slave")
 		}
 	}
+*/
+func assignDisconnected(id string, pUpdate peers.PeerUpdate, elevatorStatuses []elevator.Elevator, chElevatorStatuses chan []elevator.Elevator) {
+	if len(pUpdate.Lost) > 0 && pUpdate.Lost[0] != id {
+		for i := 0; i < len(pUpdate.Lost); i++ {
+			elevId, err := strconv.Atoi(pUpdate.Lost[i])
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
+			elevatorStatuses[elevId].Behaviour = elevator.EB_Disconnected
+			elevatorStatuses[elevId].Dirn = elevio.MD_Stop
+			fmt.Println("elevator", elevId, "disconnected")
+			chElevatorStatuses <- elevatorStatuses
+		}
+	}
+	return
+}
+
+func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate peers.PeerUpdate) {
+	ignore := false
+	for i := 0; i < len(pUpdate.Lost); i++ {
+		if pUpdate.Lost[i] == id {
+			ignore = true
+		}
+	}
+	if pUpdate.New == id {
+		ignore = true
+	}
+	if !ignore {
+		fmt.Printf("Peer update:\n")
+		fmt.Printf("  Peers:    %q\n", pUpdate.Peers)
+		fmt.Printf("  New:      %q\n", pUpdate.New)
+		fmt.Printf("  Lost:     %q\n", pUpdate.Lost)
+		if pUpdate.Peers[0] == id {
+			if !masterState {
+				fmt.Println("changed master state to true")
+				chMasterState <- true
+			}
+		} else {
+			if masterState {
+				fmt.Println("changed master state to false")
+				chMasterState <- false
+			}
+		}
+	}
+	return
 }
 
 type hallRequests map[string][][2]int
@@ -135,18 +183,7 @@ func main() {
 
 		case pUpdate := <-chPeerRx:
 			fmt.Printf("Peer update:\n")
-			if len(pUpdate.Lost) > 0 {
-				if pUpdate.Lost[0] != "" {
-					loss, err := strconv.Atoi(pUpdate.Lost[0])
-					if err != nil {
-						fmt.Println("Error:", err)
-						return
-					}
-
-					elevatorStatuses[loss].Behaviour = elevator.EB_Disconnected
-					chElevatorStatuses <- elevatorStatuses
-				}
-			}
+			go assignDisconnected(id, pUpdate, elevatorStatuses, chElevatorStatuses)
 			go checkMaster(chMasterState, masterState, id, pUpdate)
 
 		case state := <-chMasterState:
