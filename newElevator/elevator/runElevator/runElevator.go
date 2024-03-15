@@ -180,21 +180,23 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator, newHallRequest chan ele
 				case elevator.EB_DoorOpen:
 					doorTimeoutSignal.Reset(3 * time.Second)
 					//kanskje cleare dobelt her
-					if localElevator.Requests[localElevator.Floor][0] {
-						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						localElevator.Dirn = elevio.MD_Up
-						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						localElevator.Dirn = pair.Dirn
-						localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
-					} else {
-						localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
-					}
-					if localElevator.Requests[localElevator.Floor][1] {
-						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						localElevator.Dirn = elevio.MD_Down
-						chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
-						localElevator.Dirn = pair.Dirn
-					}
+					//if localElevator.Requests[localElevator.Floor][0] {
+						//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+						//localElevator.Dirn = elevio.MD_Up
+						//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+						//localElevator.Dirn = pair.Dirn
+						//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
+					//} else {
+						//localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
+					//}
+					//if localElevator.Requests[localElevator.Floor][1] {
+						//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+						//localElevator.Dirn = elevio.MD_Down
+						//chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+						//localElevator.Dirn = pair.Dirn
+					//}
+					chClearedHallRequests <- requests.RequestClearHallRequestsAtCurrentFloor(localElevator)
+					localElevator = requests.RequestsClearAtCurrentFloor(localElevator)
 					setAllLights(localElevator)
 					//localElevator.Behaviour = elevator.EB_Idle
 					//localElevator.Behaviour = elevator.EB_DoorOpen // door open

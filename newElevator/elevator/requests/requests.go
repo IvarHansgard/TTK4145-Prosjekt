@@ -232,9 +232,9 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 	e.Requests[e.Floor][elevio.BT_Cab] = false
 	switch e.Dirn {
 	case elevio.MD_Up:
-		// if !RequestsAbove(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
-		// 	e.Requests[e.Floor][elevio.BT_HallDown] = false
-		// }
+		if !RequestsAbove(e) && !e.Requests[e.Floor][elevio.BT_HallUp] {
+		 	e.Requests[e.Floor][elevio.BT_HallDown] = false
+		 }
 		// /*
 		// 	if RequestsAbove(e) && e.Requests[e.Floor][elevio.BT_HallUp] && e.Requests[e.Floor][elevio.BT_HallDown] && !RequestsBelow(e){
 		// 		e.Requests[e.Floor][elevio.BT_HallDown]=false
@@ -243,17 +243,17 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 		// 	}*/
 		// e.Requests[e.Floor][elevio.BT_HallUp] = false
 		e.Requests[e.Floor][elevio.BT_HallUp] = false
-		if !RequestsAbove(e) {
-			e.Requests[e.Floor][elevio.BT_HallDown] = false
-		}
+		//if !RequestsAbove(e) {
+		//	e.Requests[e.Floor][elevio.BT_HallDown] = false
+		//}
 	case elevio.MD_Down:
-		// if !RequestsBelow(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
-		// 	e.Requests[e.Floor][elevio.BT_HallUp] = false
-		// }
+		 if !RequestsBelow(e) && !e.Requests[e.Floor][elevio.BT_HallDown] {
+		 	e.Requests[e.Floor][elevio.BT_HallUp] = false
+		 }
 		e.Requests[e.Floor][elevio.BT_HallDown] = false
-		if !RequestsBelow(e) {
-			e.Requests[e.Floor][elevio.BT_HallUp] = false
-		}
+		//if !RequestsBelow(e) {
+		//	e.Requests[e.Floor][elevio.BT_HallUp] = false
+		//}
 	case elevio.MD_Stop:
 		fallthrough
 	default:
