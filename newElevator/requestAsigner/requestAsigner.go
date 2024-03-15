@@ -155,7 +155,7 @@ func setRunRequestAssigner(isNewHallRequest chan bool, state bool) {
 	isNewHallRequest <- state
 }
 
-func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators chan []elevator.Elevator, chMasterState chan bool, chClearedHallRequests chan elevio.ButtonEvent, hallRequestsTx chan HallRequests) {
+func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates chan []elevator.Elevator, chRequestAssigner chan bool, chHallRequestClearedRx chan elevio.ButtonEvent, chAssignedHallRequestsTx chan HallRequests) {
 	fmt.Println("Starting requestAsigner")
 
 	choldHallRequests := make(chan [4][2]bool)
@@ -170,19 +170,20 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 
 	for {
 		select {
-		case temp := <-chMasterState:
+		case temp := <-chRequestAssigner:
 			masterState = temp
 			go setRunRequestAssigner(isNewHallRequest, true)
 
-		case clearedHallRequest := <-chClearedHallRequests:
+		case clearedHallRequest := <-chHallRequestClearedRx
+:
 			HallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
 
 			//elevio.SetButtonLamp(clearedHallRequest.Button,clearedHallRequest.Floor,false)
 
-		case activeElevators := <-chActiveElevators:
+		case activeElevators := <-chElevatorStates:
 			elevatorStates = activeElevators
 
-		case button := <-chNewHallRequest:
+		case button := <-chNewHallRequestRx:
 			fmt.Println("Hall request recieved", button)
 			HallRequests[button.Floor][int(button.Button)] = true
 			go checkifNewHallRequest(choldHallRequests, oldHallRequests, HallRequests)
@@ -237,7 +238,8 @@ func RequestAsigner(chNewHallRequest chan elevio.ButtonEvent, chActiveElevators 
 						return
 					}
 
-					hallRequestsTx <- *output
+					chAssignedHallRequestsTx
+ <- *output
 					//fmt.Println("Hall requests assigned: ", *output)
 					//fmt.Println("old", oldHallRequests)
 					//fmt.Println("new", HallRequests)

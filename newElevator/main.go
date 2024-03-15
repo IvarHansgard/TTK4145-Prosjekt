@@ -11,14 +11,14 @@ import (
 	"fmt"
 )
 
-func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate peers.PeerUpdate) {
-	if len(pUpdate.Peers) == 1 && pUpdate.New == id {
+func checkMaster(chMasterState chan bool, masterState bool, id string, peerUpdate peers.PeerUpdate) {
+	if len(peerUpdate.Peers) == 1 && peerUpdate.New == id {
 		fmt.Println("Start Up")
 		fmt.Println("My master state is", masterState)
-	} else if len(pUpdate.Lost) > 0 {
-		fmt.Println("Lost peer", pUpdate.Lost)
+	} else if len(peerUpdate.Lost) > 0 {
+		fmt.Println("Lost peer", peerUpdate.Lost)
 		fmt.Println("checking master")
-		if pUpdate.Peers[0] == id {
+		if peerUpdate.Peers[0] == id {
 			if !masterState {
 				fmt.Println("Changing to master")
 				chMasterState <- true
@@ -31,10 +31,10 @@ func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate p
 			}
 			fmt.Println("I am slave")
 		}
-	} else if pUpdate.New != "" && pUpdate.New != id {
-		fmt.Println("New peer", pUpdate.New)
+	} else if peerUpdate.New != "" && peerUpdate.New != id {
+		fmt.Println("New peer", peerUpdate.New)
 		fmt.Println("checking master")
-		if pUpdate.Peers[0] == id {
+		if peerUpdate.Peers[0] == id {
 			if !masterState {
 				fmt.Println("Changing to master")
 				chMasterState <- true
@@ -47,8 +47,8 @@ func checkMaster(chMasterState chan bool, masterState bool, id string, pUpdate p
 			}
 			fmt.Println("I am slave")
 		}
-	} else if len(pUpdate.Peers) > 0 {
-		if pUpdate.Peers[0] == id {
+	} else if len(peerUpdate.Peers) > 0 {
+		if peerUpdate.Peers[0] == id {
 			if !masterState {
 				fmt.Println("Changing to master")
 				chMasterState <- true
@@ -77,13 +77,13 @@ func main() {
 	//chanels
 	masterState := true
 	chMasterState := make(chan bool)
-	chRequestAssignerMasterState := make(chan bool)
+	chRequestAssigner := make(chan bool)
 
 	chElevatorTx := make(chan elevator.Elevator)
 	chElevatorRx := make(chan elevator.Elevator)
 
-	elevatorStatuses := make([]elevator.Elevator, 3)
-	chElevatorStatuses := make(chan []elevator.Elevator)
+	elevatorStates := make([]elevator.Elevator, 3)
+	chElevatorStates := make(chan []elevator.Elevator)
 
 	//Used for sending hall request too elevators from request assigner
 	chAssignedHallRequestsTx := make(chan requestAsigner.HallRequests)
@@ -121,18 +121,18 @@ func main() {
 	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port)
 
 	//function for assigning hall request to slave elevators
-	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStatuses, chRequestAssignerMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her
+	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStates, chRequestAssigner, chHallRequestClearedRx, chAssignedHallRequestsTx) //jobbe med den her
 
 	fmt.Println("Starting main loop")
 	for {
 		select {
 		case elevator := <-chElevatorRx:
-			elevatorStatuses[elevator.Id] = elevator
-			chElevatorStatuses <- elevatorStatuses
+			elevatorStates[elevator.Id] = elevator
+			chElevatorStates <- elevatorStates
 
-		case pUpdate := <-chPeerRx:
+		case peerUpdate := <-chPeerRx:
 			fmt.Printf("Peer update:\n")
-			go checkMaster(chMasterState, masterState, id, pUpdate)
+			go checkMaster(chMasterState, masterState, id, peerUpdate)
 
 		case state := <-chMasterState:
 			masterState = state

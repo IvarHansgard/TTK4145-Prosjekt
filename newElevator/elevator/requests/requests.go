@@ -268,7 +268,7 @@ func RequestsClearAtCurrentFloor(e Elevator) Elevator {
 
 }
 
-func RequestClearHallRequestsAtCurrentFloor(e Elevator) elevio.ButtonEvent {
+func HallRequestsClearAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 	var buttonToclear elevio.ButtonEvent
 	switch e.Dirn {
 	case elevio.MD_Down:

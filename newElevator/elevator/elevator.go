@@ -18,7 +18,6 @@ type Elevator struct {
 	Floor    int
 	Dirn     elevio.MotorDirection
 	Requests [4][3]bool
-	//hallRequests [4][2]bool
 	Behaviour ElevatorBehaviour
 }
 
