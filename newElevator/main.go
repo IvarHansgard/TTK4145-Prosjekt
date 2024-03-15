@@ -131,6 +131,7 @@ func assignDisconnected(id string, peerUpdate peers.PeerUpdate, elevatorStates [
 			elevatorStates[elevId].Behaviour = elevator.EB_Disconnected
 			elevatorStates[elevId].Dirn = elevio.MD_Stop
 			fmt.Println("elevator", elevId, "disconnected")
+			fmt.Println(peerUpdate.Lost)
 			chElevatorStates <- elevatorStates
 			chElevatorLost <- true
 		}
@@ -199,6 +200,8 @@ func main() {
 	//used to send information about cleared hall requests from elevators to request assigner
 	chHallRequestClearedTx := make(chan elevio.ButtonEvent)
 	chHallRequestClearedRx := make(chan elevio.ButtonEvent)
+	chSetButtonLightTx := make(chan elevio.ButtonEvent)
+	chSetButtonLightRx := make(chan elevio.ButtonEvent)
 
 	chPeerEnable := make(chan bool)
 	chPeerRx := make(chan peers.PeerUpdate)
@@ -220,15 +223,18 @@ func main() {
 	//transmitter and receiver for cleared hall requests
 	go bcast.Transmitter(3003, chHallRequestClearedTx)
 	go bcast.Receiver(3003, chHallRequestClearedRx)
+
+	go bcast.Transmitter(3004, chSetButtonLightTx)
+	go bcast.Receiver(3004, chSetButtonLightRx)
 	//transmitter and receiver for peer
 	go peers.Transmitter(4001, id, chPeerEnable)
 	go peers.Receiver(4001, chPeerRx)
 
 	//functions for running the local elevator
-	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port, chStopButtonPressed)
+	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx, chHallRequestClearedTx, id, port, chStopButtonPressed, chSetButtonLightRx, chSetButtonLightTx)
 
 	//function for assigning hall request to slave elevators
-	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStates, chRequestAssignerMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx,chStopButtonPressed) //jobbe med den her
+	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorStates, chRequestAssignerMasterState, chHallRequestClearedRx, chAssignedHallRequestsTx, chStopButtonPressed) //jobbe med den her
 
 	fmt.Println("Starting main loop")
 	for {

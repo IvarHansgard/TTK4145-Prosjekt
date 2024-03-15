@@ -69,7 +69,9 @@ func elevatorsToHRAInput(hallRequest [4][2]bool, elevatorArray []elevator.Elevat
 	if inputStates["three"].Behavior == string(elevator.EB_Disconnected) {
 		delete(inputStates, "three")
 	}
-
+	fmt.Println("elevator one state", inputStates["one"].Behavior)
+	fmt.Println("elevator two state", inputStates["two"].Behavior)
+	fmt.Println("elevator three state", inputStates["three"].Behavior)
 	input.States = inputStates
 	input.HallRequests = hallRequest
 
