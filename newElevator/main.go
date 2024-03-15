@@ -135,14 +135,17 @@ func main() {
 
 		case pUpdate := <-chPeerRx:
 			fmt.Printf("Peer update:\n")
-			if pUpdate.Lost[0] != "" {
-				loss, err := strconv.Atoi(pUpdate.Lost[0])
-				if err != nil {
-					fmt.Println("Error:", err)
-					return
+			if len(pUpdate.Lost) > 0 {
+				if pUpdate.Lost[0] != "" {
+					loss, err := strconv.Atoi(pUpdate.Lost[0])
+					if err != nil {
+						fmt.Println("Error:", err)
+						return
+					}
+
+					elevatorStatuses[loss].Behaviour = elevator.EB_Disconnected
+					chElevatorStatuses <- elevatorStatuses
 				}
-				elevatorStatuses[loss].Behaviour = elevator.EB_Disconnected
-				chElevatorStatuses <- elevatorStatuses
 			}
 			go checkMaster(chMasterState, masterState, id, pUpdate)
 

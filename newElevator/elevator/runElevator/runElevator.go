@@ -133,6 +133,7 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator, newHallRequest chan ele
 		elevio.SetMotorDirection(elevio.MD_Down)
 		localElevator.Dirn = elevio.MD_Down
 		localElevator.Behaviour = elevator.EB_Moving
+		elevatorTx <- localElevator
 	}
 	for {
 		select {
@@ -420,9 +421,10 @@ func RunLocalElevator(elevatorTx chan elevator.Elevator, newHallRequest chan ele
 					elevio.SetButtonLamp(b, f, false)
 				}
 			}
-			elevio.SetMotorDirection(elevio.MD_Stop)
-			elevio.SetDoorOpenLamp(false)
+			localElevator.Dirn = elevio.MD_Stop
 			localElevator.Behaviour = elevator.EB_Disconnected
+			elevio.SetMotorDirection(localElevator.Dirn)
+			elevio.SetDoorOpenLamp(false)
 			elevatorTx <- localElevator
 			chStopButtonPressed <- true
 		}
