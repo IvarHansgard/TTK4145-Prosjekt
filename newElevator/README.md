@@ -12,7 +12,9 @@ Port to the elevator server you want to use (Default = 15657): `--port`
 
 Number of elevators in the system (Default = 3): `--elevators`
 
-Example of running with "3" elevators on port "15651" and an id of "1"
+Example
+==========================================
+Running with "3" elevators on port "15651" and an id of "1"
 
 Without compiling: `go run main.go --elevators 3 --port 15651 --id 1`
 
