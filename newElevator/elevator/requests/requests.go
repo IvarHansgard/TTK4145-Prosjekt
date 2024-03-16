@@ -100,7 +100,7 @@ func RequestsChooseDirection(e Elevator) DirnBehaviourPair {
 			fmt.Println("md down, requests above")
 			return DirnBehaviourPair{elevio.MD_Up, EB_Moving}
 		} else {
-			fmt.Println("md down, idle")
+			//fmt.Println("md down, idle")
 			return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
 		}
 
@@ -199,6 +199,7 @@ func HallRequestsClearAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 			}
 
 		}
+
 	}
 
 	if e.Floor == 0 {
@@ -208,7 +209,6 @@ func HallRequestsClearAtCurrentFloor(e Elevator) elevio.ButtonEvent {
 		buttonToclear.Floor = e.Floor
 		buttonToclear.Button = elevio.BT_HallDown
 	}
-	fmt.Println("buttonToclear is:", buttonToclear)
 	return buttonToclear
 
 }

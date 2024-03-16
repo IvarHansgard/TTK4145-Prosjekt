@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"time"
 )
 
-// Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
-// This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
-
 type HallRequests map[string][4][2]bool
+type ElevatorMap map[string]elevator.Elevator
 
 type HRAElevState struct {
 	Behavior    string  `json:"behaviour"`
@@ -29,12 +28,10 @@ type HRAInput struct {
 
 func elevatorToHRAElevState(e elevator.Elevator) HRAElevState {
 	var hra HRAElevState
-	//fmt.Println("Converting elevator to HRAElevState:", e)
 
 	if e.Behaviour == "" {
 		e.Behaviour = elevator.EB_Disconnected
 	}
-	//fmt.Println("Elevator behaviour:", string(e.Behaviour))
 	hra.Behavior = string(e.Behaviour)
 	hra.Floor = e.Floor
 
@@ -53,93 +50,116 @@ func elevatorToHRAElevState(e elevator.Elevator) HRAElevState {
 	return hra
 }
 
-func elevatorsToHRAInput(hallRequest [4][2]bool, elevatorArray []elevator.Elevator) HRAInput {
+func elevatorsToHRAInput(hallRequest [4][2]bool, elevatorArray ElevatorMap) HRAInput {
 	var input HRAInput
 	inputStates := make(map[string]HRAElevState)
 
-	inputStates["one"] = elevatorToHRAElevState(elevatorArray[0])
-	inputStates["two"] = elevatorToHRAElevState(elevatorArray[1])
-	inputStates["three"] = elevatorToHRAElevState(elevatorArray[2])
-	if inputStates["one"].Behavior == string(elevator.EB_Disconnected) {
-		delete(inputStates, "one")
+	for i := 0; i < len(elevatorArray); i++ {
+		if elevatorArray[strconv.Itoa(i)].Behaviour != elevator.EB_Disconnected {
+			inputStates[elevatorArray[strconv.Itoa(i)].StrID] = elevatorToHRAElevState(elevatorArray[strconv.Itoa(i)])
+		}
 	}
-	if inputStates["two"].Behavior == string(elevator.EB_Disconnected) {
-		delete(inputStates, "two")
-	}
-	if inputStates["three"].Behavior == string(elevator.EB_Disconnected) {
-		delete(inputStates, "three")
-	}
-	fmt.Println("elevator one state", inputStates["one"].Behavior)
-	fmt.Println("elevator two state", inputStates["two"].Behavior)
-	fmt.Println("elevator three state", inputStates["three"].Behavior)
 	input.States = inputStates
 	input.HallRequests = hallRequest
 
 	return input
 }
 
-func checkifNewHallRequest(choldHallRequests chan [4][2]bool, oldHallRequests, newHallRequests [4][2]bool) {
-
-	fmt.Println("checking if new hall request")
+func checkifNewHallRequest(oldHallRequests, newHallRequests [4][2]bool) bool {
+	//debug
+	//fmt.Println("checking if new hall request")
 	for i := 0; i < 4; i++ {
 		for j := 0; j < 2; j++ {
 			if !oldHallRequests[i][j] == newHallRequests[i][j] {
-				fmt.Println("true")
-				choldHallRequests <- newHallRequests
-				return
+				return true
 			}
 
 		}
 
 	}
+	return false
 }
 
-func setRunRequestAssigner(isNewHallRequest chan bool, state bool) {
-	isNewHallRequest <- state
+func setRunRequestAssigner(runHallRequestAssigner chan bool, state bool) {
+	runHallRequestAssigner <- state
 }
 
-func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates chan []elevator.Elevator, chRequestAssignerMasterState chan bool,
-	chHallRequestClearedRx chan elevio.ButtonEvent, chAssignedHallRequestsTx chan HallRequests, chStopButtonPressed chan bool) {
+func RequestAsigner(
+	chNewHallRequestRx chan elevio.ButtonEvent,
+	chElevatorRx chan elevator.Elevator,
+	chMasterState chan bool,
+	chHallRequestClearedRx chan elevio.ButtonEvent,
+	chAssignedHallRequestsTx chan HallRequests,
+	chStopButtonPressed chan bool,
+	chSendHallRequestsToMasterTx chan [4][2]bool,
+	chSendHallRequestsToMasterRx chan [4][2]bool,
+	chSendElevatorStatesToMasterTx chan ElevatorMap,
+	chSendElevatorStatesToMasterRx chan ElevatorMap,
+	chElevatorLost chan string,
+	numElevators int) {
+
 	fmt.Println("Starting requestAsigner")
-
-	chOldHallRequests := make(chan [4][2]bool)
 
 	hallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
 	oldHallRequests := [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
 
 	runHallRequestAssigner := make(chan bool)
-
-	var elevatorStates []elevator.Elevator
+	elevatorStates := make(map[string]elevator.Elevator)
+	for i := 0; i < numElevators; i++ {
+		elevatorStates[strconv.Itoa(i)] = elevator.Elevator_init_disconnected(i, strconv.Itoa(i))
+	}
 	var masterState bool = true
 
 	for {
 		select {
 		case <-chStopButtonPressed:
 			go setRunRequestAssigner(runHallRequestAssigner, true)
-		case temp := <-chRequestAssignerMasterState:
-			masterState = temp
-			go setRunRequestAssigner(runHallRequestAssigner, true)
+
+		case temp := <-chMasterState:
+			if masterState && !temp {
+				fmt.Println("sending data to master")
+				chSendHallRequestsToMasterTx <- hallRequests
+				chSendElevatorStatesToMasterTx <- elevatorStates
+				masterState = temp
+			}
+
+		case hallRequesFromPrevMaster := <-chSendHallRequestsToMasterRx:
+			if masterState {
+				hallRequests = hallRequesFromPrevMaster
+			}
 
 		case clearedHallRequest := <-chHallRequestClearedRx:
+			//debug
+			//fmt.Println("clearing button", clearedHallRequest.Floor, int(clearedHallRequest.Button))
+			//oldHallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
 			hallRequests[clearedHallRequest.Floor][int(clearedHallRequest.Button)] = false
 
-		case activeElevators := <-chElevatorStates:
-			elevatorStates = activeElevators
+		case elevator := <-chElevatorRx:
+			elevatorStates[elevator.StrID] = elevator
+
+		case elevatorStatesFromPrevMaster := <-chSendElevatorStatesToMasterRx:
+			elevatorStates = elevatorStatesFromPrevMaster
+
+		case lostElevatorID := <-chElevatorLost:
+			tempElev := elevatorStates[lostElevatorID]
+			tempElev.Behaviour = elevator.EB_Disconnected
+			elevatorStates[lostElevatorID] = tempElev
+			if masterState {
+				go setRunRequestAssigner(runHallRequestAssigner, true)
+			}
 
 		case button := <-chNewHallRequestRx:
-			fmt.Println("Hall request recieved", button)
 			hallRequests[button.Floor][int(button.Button)] = true
-			go checkifNewHallRequest(chOldHallRequests, oldHallRequests, hallRequests)
+			if checkifNewHallRequest(oldHallRequests, hallRequests) {
+				oldHallRequests = hallRequests
+				go setRunRequestAssigner(runHallRequestAssigner, true)
+			}
 
-		case temp := <-chOldHallRequests:
-			oldHallRequests = temp
-			go setRunRequestAssigner(runHallRequestAssigner, true)
-
-		case newHallRequest := <-runHallRequestAssigner:
+		case run := <-runHallRequestAssigner:
 
 			if masterState {
 
-				if newHallRequest {
+				if run {
 					fmt.Println("Asigning requests to elevators")
 
 					input := elevatorsToHRAInput(hallRequests, elevatorStates)
@@ -175,9 +195,8 @@ func RequestAsigner(chNewHallRequestRx chan elevio.ButtonEvent, chElevatorStates
 					}
 
 					chAssignedHallRequestsTx <- *output
-					//fmt.Println("Hall requests assigned: ", *output)
-					//fmt.Println("old", oldHallRequests)
-					//fmt.Println("new", HallRequests)
+					//debug
+					fmt.Println("Hall requests assigned: ", *output)
 				}
 			}
 		default:
