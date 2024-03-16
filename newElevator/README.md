@@ -4,11 +4,20 @@ To run the elevator type without compiling type `go run main.go <optional argume
 
 After compiling you can run with `./main.exe <optional arguments>` on windows or `./main <optional arguments>` on linux 
 
-
 Arguments avalible
 ==========================================
-`--id` Id of the elevator (Default = "0")
+Id of the elevator (Default = "0"): `--id`
 
-`--port` Port to the elevator server you want to use (Default = 15657)
+Port to the elevator server you want to use (Default = 15657): `--port`
 
-`--elevators` number of elevators in the system (Default = 3)
+Number of elevators in the system (Default = 3): `--elevators`
+
+Example of running with "3" elevators on port "15651" and an id of "1"
+
+Without compiling: `go run main.go --elevators 3 --port 15651 --id 1`
+
+After compiling:
+
+Windows: `./main.exe --elevators 3 --port 15651 --id 1`
+
+Linux: `./main --elevators 3 --port 15651 --id 1`
