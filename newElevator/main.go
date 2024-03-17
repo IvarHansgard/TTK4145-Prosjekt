@@ -1,14 +1,21 @@
 package main
 
 import (
+	"bufio"
 	"elevatorlib/elevator"
 	"elevatorlib/elevator/runElevator"
 	"elevatorlib/elevio"
 	"elevatorlib/network/bcast"
 	"elevatorlib/network/peers"
 	"elevatorlib/requestAsigner"
+	"errors"
 	"flag"
 	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"strconv"
+	"time"
 )
 
 type hallRequests map[string][][2]int
@@ -55,26 +62,85 @@ func checkMasterState(peerUpdate peers.PeerUpdate, chMasterState chan bool, id s
 	return
 }
 
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func checkForCrash(chCrashDetected chan bool, id string, port, numElevators, timeout int) {
+	if _, err := os.Stat("backup"); err == nil {
+		for {
+			info, err := os.Stat("backup")
+			check(err)
+
+			t := time.Now().Second()
+
+			if t >= info.ModTime().Second()+timeout {
+				break
+			}
+		}
+	} else if errors.Is(err, os.ErrNotExist) {
+		// path/to/whatever does *not* exist
+		f, err := os.OpenFile("backup", os.O_CREATE, 0600)
+		check(err)
+
+		defer f.Close()
+
+		f.Sync()
+	} else {
+		fmt.Println("ERROR!!")
+	}
+
+	f, err := os.OpenFile("backup", os.O_WRONLY|os.O_APPEND, 0600)
+	check(err)
+
+	//start new elevator
+	//Windows
+	go exec.Command("cmd", "/C", "start", "powershell", "go", "run", "main.go", "--id "+id, "--port "+strconv.Itoa(port), "--elevators "+strconv.Itoa(numElevators)).Run()
+	//Linux
+	//exec.Command("gnome-terminal", "--", "go", "run", "main.go", "--id "+id, "--port "+strconv.Itoa(port), "--elevators "+strconv.Itoa(numElevators)).Run()
+
+	chCrashDetected <- true
+
+	w := bufio.NewWriter(f)
+	//Remove content from file
+	for {
+		err := os.Truncate("backup", 0)
+		if err != nil {
+			log.Fatal(err)
+		}
+		//Write to file
+		s := fmt.Sprint("Still alive", "\n")
+		_, err = w.WriteString(s)
+		w.Flush()
+		check(err)
+		time.Sleep(1 * time.Second)
+	}
+}
+
 func main() {
-	fmt.Println("Starting main")
+	//flags
 	id := "0"
 	port := 15657
 	numElevators := 3
+	programTimeOut := 5
 	flag.StringVar(&id, "id", "0", "id of this elevator")
 	flag.IntVar(&port, "port", 15657, "port of this elevator")
 	flag.IntVar(&numElevators, "elevators", 3, "numbers of elevators in the system")
+	flag.IntVar(&programTimeOut, "timeout", 5, "timeout for crash detection in seconds")
 	flag.Parse()
-
 	//chanels
+	//
+	chCrashDetected := make(chan bool)
+	//
 	chMasterState := make(chan bool)
-
+	//
 	chElevatorTx := make(chan elevator.Elevator)
 	chElevatorRx := make(chan elevator.Elevator)
-
 	//Used for sending hall request too elevators from request assigner
 	chAssignedHallRequestsTx := make(chan requestAsigner.HallRequests)
 	chAssignedHallRequestsRx := make(chan requestAsigner.HallRequests)
-
 	//used for sending new hall requests from elevators to request assigner
 	chNewHallRequestTx := make(chan elevio.ButtonEvent)
 	chNewHallRequestRx := make(chan elevio.ButtonEvent)
@@ -87,15 +153,23 @@ func main() {
 	chHallRequestClearedRx := make(chan elevio.ButtonEvent)
 	chSetButtonLightTx := make(chan elevio.ButtonEvent)
 	chSetButtonLightRx := make(chan elevio.ButtonEvent)
-
-	chPeerEnable := make(chan bool)
-	chPeerRx := make(chan peers.PeerUpdate)
-
+	//
 	chStopButtonPressed := make(chan bool)
 	chElevatorLost := make(chan string)
-
-	//initing num of elevators
-
+	//Peer channels
+	chPeerEnable := make(chan bool)
+	chPeerRx := make(chan peers.PeerUpdate)
+	//crash detection
+	go checkForCrash(chCrashDetected, id, port, numElevators, programTimeOut)
+crashDetectionLoop:
+	for {
+		select {
+		case <-chCrashDetected:
+			fmt.Println("Main program crashed or first start, exiting crash detection loop")
+			break crashDetectionLoop
+		}
+	}
+	//go routines
 	//used for updating the active watchdogs array (checking which elevators are still alive)
 	fmt.Println("Starting broadcast of, elevator, hallRequest and watchdog")
 	//transmitter and receiver for elevator states
@@ -122,18 +196,16 @@ func main() {
 	fmt.Println("starting peers")
 	go peers.Transmitter(9000, id, chPeerEnable)
 	go peers.Receiver(9000, chPeerRx)
-
 	//functions for running the local elevator
 	go runElevator.RunLocalElevator(chElevatorTx, chNewHallRequestTx, chAssignedHallRequestsRx,
 		chHallRequestClearedTx, id, port,
 		chStopButtonPressed, chSetButtonLightRx, chSetButtonLightTx)
-
 	//function for assigning hall request to slave elevators
 	go requestAsigner.RequestAsigner(chNewHallRequestRx, chElevatorRx, chMasterState,
 		chHallRequestClearedRx, chAssignedHallRequestsTx, chStopButtonPressed,
 		chSendHallRequestsToMasterTx, chSendHallRequestsToMasterRx, chSendElevatorStatesToMasterTx,
 		chSendElevatorStatesToMasterRx, chElevatorLost, numElevators)
-
+	//main loop
 	fmt.Println("Starting main loop")
 	for {
 		select {
@@ -144,5 +216,7 @@ func main() {
 			//fmt.Println("New:", peerUpdate.New)
 			go checkMasterState(peerUpdate, chMasterState, id, chElevatorLost)
 		}
+
 	}
+
 }
