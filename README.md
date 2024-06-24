@@ -1,2 +1,3 @@
 # TTK4145-Prosjekt
-Prosjekt sanntidsprogrammering
+Prosjekt og øvinger i sanntidsprogrammering
+Hovvedprosjektet ligger i newElevator
